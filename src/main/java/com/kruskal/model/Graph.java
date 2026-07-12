@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
  * Класс, представляющий граф.
  * Поля:
  *  List<Node> nodes - список вершин
- *  List<Edges> edges - список ребер
+ *  List<Edge> edges - список ребер
  *
  * Содержит методы для создания и редактирования графа:
  * добавление и удаление вершин и ребер, поиск вершины по id,
@@ -47,7 +47,7 @@ public class Graph {
                 edges.add(edge);
             }
         } else {
-            throw new IllegalArgumentException("Both nodes must be in the graph");
+            throw new IllegalArgumentException("Обе вершины должны быть в графе");
         }
     }
 
