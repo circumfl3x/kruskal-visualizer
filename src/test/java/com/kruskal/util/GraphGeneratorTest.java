@@ -2,13 +2,13 @@ package com.kruskal.util;
 
 import com.kruskal.model.Edge;
 import com.kruskal.model.Graph;
-import com.kruskal.model.Node;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class GraphGeneratorTest {
 
+    // Проверка, что создается нужное количество вершин
     @Test
     void shouldGenerateCorrectNumberOfNodes() {
         GraphGenerator generator = new GraphGenerator();
@@ -18,7 +18,7 @@ class GraphGeneratorTest {
         assertEquals(10, graph.getNodeCount());
     }
 
-
+    // Проверка, что создается нужное количество ребер
     @Test
     void shouldGenerateCorrectNumberOfEdges() {
         GraphGenerator generator = new GraphGenerator();
@@ -28,7 +28,7 @@ class GraphGeneratorTest {
         assertEquals(15, graph.getEdgeCount());
     }
 
-
+    // Проверка, что все ребра имеют положительный вес
     @Test
     void generatedEdgesShouldHavePositiveWeight() {
         GraphGenerator generator = new GraphGenerator();
@@ -40,7 +40,7 @@ class GraphGeneratorTest {
         }
     }
 
-
+    // Проверка отсутствия петель (ребер из вершины в саму себя)
     @Test
     void shouldNotGenerateLoops() {
         GraphGenerator generator = new GraphGenerator();
@@ -48,14 +48,11 @@ class GraphGeneratorTest {
         Graph graph = generator.generate(10, 15);
 
         for (Edge edge : graph.getEdges()) {
-            assertNotEquals(
-                    edge.getNode1(),
-                    edge.getNode2()
-            );
+            assertNotEquals(edge.getNode1(), edge.getNode2());
         }
     }
 
-
+    // Проверка отсутствия повторяющихся ребер
     @Test
     void shouldNotGenerateDuplicateEdges() {
         GraphGenerator generator = new GraphGenerator();
@@ -67,19 +64,15 @@ class GraphGeneratorTest {
 
                 if (edge1 != edge2) {
                     assertFalse(
-                            edge1.connects(
-                                    edge2.getNode1(),
-                                    edge2.getNode2()
-                            )
-                                    &&
-                                    edge1.getWeight() == edge2.getWeight()
+                            edge1.connects(edge2.getNode1(), edge2.getNode2())
+                                    && edge1.getWeight() == edge2.getWeight()
                     );
                 }
             }
         }
     }
 
-
+    // Проверка обработки некорректного количества вершин
     @Test
     void shouldThrowExceptionForInvalidNodeCount() {
         GraphGenerator generator = new GraphGenerator();
@@ -90,7 +83,7 @@ class GraphGeneratorTest {
         );
     }
 
-
+    // Проверка обработки слишком большого количества ребер
     @Test
     void shouldThrowExceptionWhenTooManyEdgesRequested() {
         GraphGenerator generator = new GraphGenerator();
@@ -102,6 +95,7 @@ class GraphGeneratorTest {
         );
     }
 
+    // Проверка обработки отрицательного количества ребер
     @Test
     void shouldThrowExceptionForNegativeEdgeCount() {
         GraphGenerator generator = new GraphGenerator();
