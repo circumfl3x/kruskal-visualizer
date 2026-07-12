@@ -2,8 +2,6 @@ package com.kruskal.algorithm;
 
 import com.kruskal.model.Edge;
 import com.kruskal.model.Graph;
-import com.kruskal.model.Node;
-import com.sun.javafx.scene.traversal.Algorithm;
 
 import java.util.ArrayList;
 import java.util.Collections;
