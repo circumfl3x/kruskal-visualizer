@@ -22,7 +22,7 @@ public class KruskalAlgorithm {
      */
     public List<AlgorithmStep> execute(Graph graph) {
         if (graph.isEmpty()) {
-            throw new IllegalArgumentException("Graph is empty");
+            throw new IllegalArgumentException("Граф пуст");
         }
 
         List<AlgorithmStep> steps = new ArrayList<>();
