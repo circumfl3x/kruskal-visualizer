@@ -45,9 +45,6 @@
             <id>linux</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
-                <os>
-                    <family>unix</family>
-                </os>
             </activation>
             <dependencies>
                 <dependency>
