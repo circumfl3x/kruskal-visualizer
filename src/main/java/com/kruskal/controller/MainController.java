@@ -8,12 +8,12 @@ import com.kruskal.model.Graph;
 import com.kruskal.util.GraphGenerator;
 import com.kruskal.util.Logger;
 import com.kruskal.visualisation.GraphRenderer;
-import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.scene.canvas.Canvas;
+import javafx.scene.Group;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 
 import java.io.File;
@@ -25,10 +25,16 @@ import java.util.Random;
 public class MainController {
 
     @FXML
-    private Canvas graphCanvas;
+    private StackPane graphContainer;
 
     @FXML
-    private Canvas mstCanvas;
+    private StackPane mstContainer;
+
+    @FXML
+    private Group graphGroup;
+
+    @FXML
+    private Group mstGroup;
 
     @FXML
     private TextArea stepsTextArea;
@@ -42,6 +48,7 @@ public class MainController {
     private KruskalAlgorithm algorithm;
     private GraphGenerator generator;
     private GraphFileReader fileReader;
+    private List<Edge> lastMSTEdges;
 
     @FXML
     public void initialize() {
@@ -51,36 +58,30 @@ public class MainController {
         generator = new GraphGenerator();
         fileReader = new GraphFileReader();
         currentGraph = new Graph(new ArrayList<>(), new ArrayList<>());
+        lastMSTEdges = new ArrayList<>();
 
-        renderer.clearCanvas(graphCanvas);
-        renderer.clearCanvas(mstCanvas);
+        graphGroup.getChildren().clear();
+        mstGroup.getChildren().clear();
         logger.clear();
 
-
-        graphCanvas.widthProperty().addListener((obs, old, newVal) -> redrawGraph());
-        graphCanvas.heightProperty().addListener((obs, old, newVal) -> redrawGraph());
-        mstCanvas.widthProperty().addListener((obs, old, newVal) -> redrawMST());
-        mstCanvas.heightProperty().addListener((obs, old, newVal) -> redrawMST());
-
-        // Первоначальная отрисовка
-        Platform.runLater(() -> {
-            redrawGraph();
-            redrawMST();
-        });
     }
 
     private void redrawGraph() {
-        if (graphCanvas.getWidth() <= 0 || graphCanvas.getHeight() <= 0) return;
+        if (graphContainer.getWidth() <= 0 || graphContainer.getHeight() <= 0) return;
         if (currentGraph != null && !currentGraph.isEmpty()) {
-            renderer.drawGraph(currentGraph, graphCanvas);
+            renderer.renderGraph(currentGraph, graphGroup);
         } else {
-            renderer.clearCanvas(graphCanvas);
+            graphGroup.getChildren().clear();
         }
     }
 
     private void redrawMST() {
-        if (mstCanvas.getWidth() <= 0 || mstCanvas.getHeight() <= 0) return;
-        renderer.clearCanvas(mstCanvas);
+        if (mstContainer.getWidth() <= 0 || mstContainer.getHeight() <= 0) return;
+        if (currentGraph != null && !lastMSTEdges.isEmpty()) {
+            renderer.renderMST(currentGraph, lastMSTEdges, mstGroup);
+        } else {
+            mstGroup.getChildren().clear();
+        }
     }
 
     @FXML
@@ -127,12 +128,13 @@ public class MainController {
                 new FileChooser.ExtensionFilter("Текстовые файлы", "*.txt")
         );
 
-        File file = fileChooser.showOpenDialog(graphCanvas.getScene().getWindow());
+        File file = fileChooser.showOpenDialog(graphContainer.getScene().getWindow());
         if (file != null) {
             try {
                 currentGraph = fileReader.read(file.getAbsolutePath());
-                renderer.drawGraph(currentGraph, graphCanvas);
-                renderer.clearCanvas(mstCanvas);
+                renderer.renderGraph(currentGraph, graphGroup);
+                mstGroup.getChildren().clear();
+                lastMSTEdges.clear();
                 logger.logGraphLoaded(file.getName(), currentGraph.getNodeCount(), currentGraph.getEdgeCount());
             } catch (IOException e) {
                 logger.logError("Ошибка при загрузке графа: " + e.getMessage());
@@ -144,7 +146,6 @@ public class MainController {
         }
     }
 
-
     @FXML
     private void onGenerateGraph() {
         try {
@@ -154,21 +155,20 @@ public class MainController {
             int maxEdges = (vertexCount * (vertexCount - 1)) / 2;
             int minEdges = vertexCount - 1;
 
-            int maxAllowedEdges = (int) (maxEdges * 0.6); // 60% от максимума
+            int maxAllowedEdges = (int) (maxEdges * 0.6);
 
             int edgeCount;
             if (maxAllowedEdges < minEdges + 2) {
-                // Для маленьких графов (4-5 вершин) делаем больше рёбер
                 edgeCount = Math.min(minEdges + 2, maxEdges);
             } else {
-                // Генерируем от (дерево + 2) до 60% от максимума
                 int minEdgesWithExtra = Math.min(minEdges + 2, maxEdges);
                 edgeCount = random.nextInt(maxAllowedEdges - minEdgesWithExtra + 1) + minEdgesWithExtra;
             }
 
             currentGraph = generator.generate(vertexCount, edgeCount);
-            renderer.drawGraph(currentGraph, graphCanvas);
-            renderer.clearCanvas(mstCanvas);
+            renderer.renderGraph(currentGraph, graphGroup);
+            mstGroup.getChildren().clear();
+            lastMSTEdges.clear();
             logger.logGraphGenerated(vertexCount, edgeCount);
         } catch (IllegalArgumentException e) {
             logger.logError("Ошибка генерации: " + e.getMessage());
@@ -186,7 +186,6 @@ public class MainController {
         try {
             List<AlgorithmStep> steps = algorithm.execute(currentGraph);
 
-            // Собираем рёбра, которые были добавлены в MST
             List<Edge> mstEdges = new ArrayList<>();
             int totalWeight = 0;
             for (AlgorithmStep step : steps) {
@@ -196,7 +195,8 @@ public class MainController {
                 }
             }
 
-            renderer.drawMST(currentGraph, mstEdges, mstCanvas);
+            lastMSTEdges = mstEdges;
+            renderer.renderMST(currentGraph, mstEdges, mstGroup);
             logger.logSortedEdges(currentGraph.getEdges().stream().sorted().toList());
             logger.logResult(totalWeight, mstEdges, currentGraph.getNodeCount());
         } catch (IllegalArgumentException e) {
@@ -228,8 +228,9 @@ public class MainController {
         if (currentGraph != null) {
             currentGraph.clear();
         }
-        renderer.clearCanvas(graphCanvas);
-        renderer.clearCanvas(mstCanvas);
+        graphGroup.getChildren().clear();
+        mstGroup.getChildren().clear();
+        lastMSTEdges.clear();
         logger.clear();
     }
 
