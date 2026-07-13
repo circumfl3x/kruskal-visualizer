@@ -31,7 +31,6 @@ public class GraphGenerator {
         Graph graph = new Graph(new ArrayList<>(), new ArrayList<>());
         Random random = new Random();
 
-        // 1. Генерация вершин внутри холста
         for (int i = 0; i < vertexCount; i++) {
             double x, y;
             do {
@@ -41,18 +40,16 @@ public class GraphGenerator {
             graph.addNode(new Node(i, x, y));
         }
 
-        // 2. Строим остовное дерево (гарантия связности)
         List<Node> nodes = new ArrayList<>(graph.getNodes());
         Collections.shuffle(nodes, random);
 
         for (int i = 1; i < nodes.size(); i++) {
             Node node1 = nodes.get(i);
-            Node node2 = nodes.get(random.nextInt(i)); // случайная предыдущая вершина
+            Node node2 = nodes.get(random.nextInt(i));
             int weight = random.nextInt(100) + 1;
             graph.addEdge(new Edge(node1, node2, weight));
         }
 
-        // 3. Добавляем оставшиеся рёбра случайным образом
         int remaining = edgeCount - (vertexCount - 1);
         int attempts = 0;
         int maxAttempts = 10000;
