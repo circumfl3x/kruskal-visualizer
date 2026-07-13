@@ -43,12 +43,12 @@
     <HBox spacing="10" VBox.vgrow="ALWAYS">
         <VBox spacing="5" HBox.hgrow="ALWAYS">
             <Label style="-fx-font-weight: bold;" text="Original Graph" />
-            <Canvas fx:id="graphCanvas" height="800.0" style="-fx-border-color: #cccccc; -fx-border-width: 2; -fx-border-radius: 5;" width="700.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" />
+            <Canvas fx:id="graphCanvas" width="470" height="470" style="-fx-border-color: #cccccc; -fx-border-width: 2; -fx-border-radius: 5;" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" />
         </VBox>
 
         <VBox spacing="5" HBox.hgrow="ALWAYS">
             <Label style="-fx-font-weight: bold;" text="MST" />
-            <Canvas fx:id="mstCanvas" height="800.0" style="-fx-border-color: #cccccc; -fx-border-width: 2; -fx-border-radius: 5;" width="700.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" />
+            <Canvas fx:id="mstCanvas" width="470" height="470" style="-fx-border-color: #cccccc; -fx-border-width: 2; -fx-border-radius: 5;" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" />
         </VBox>
 
         <VBox spacing="5" HBox.hgrow="ALWAYS">

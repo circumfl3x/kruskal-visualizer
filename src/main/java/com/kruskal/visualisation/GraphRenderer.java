@@ -41,6 +41,7 @@ public class GraphRenderer {
      * Рисует полный граф: вершины и рёбра с весами.
      */
     public void drawGraph(Graph graph, Canvas canvas) {
+        if (canvas.getWidth() <= 0 || canvas.getHeight() <= 0) return;
         clearCanvas(canvas);
 
         if (graph == null || graph.isEmpty()) {
@@ -48,6 +49,20 @@ public class GraphRenderer {
         }
 
         GraphicsContext gc = canvas.getGraphicsContext2D();
+
+
+        double referenceWidth = 470;
+        double referenceHeight = 470;
+        double currentWidth = canvas.getWidth();
+        double currentHeight = canvas.getHeight();
+
+        // Вычисляем коэффициенты масштабирования
+        double scaleX = currentWidth / referenceWidth;
+        double scaleY = currentHeight / referenceHeight;
+
+        // Сохраняем состояние, применяем масштаб
+        gc.save();
+        gc.scale(scaleX, scaleY);
 
         // Рисуем рёбра
         for (Edge edge : graph.getEdges()) {
@@ -63,6 +78,9 @@ public class GraphRenderer {
         for (Edge edge : graph.getEdges()) {
             drawEdgeWeight(gc, edge);
         }
+
+        // Восстанавливаем состояние
+        gc.restore();
     }
 
     /**

@@ -8,6 +8,7 @@ import com.kruskal.model.Graph;
 import com.kruskal.util.GraphGenerator;
 import com.kruskal.util.Logger;
 import com.kruskal.visualisation.GraphRenderer;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Alert;
@@ -54,6 +55,32 @@ public class MainController {
         renderer.clearCanvas(graphCanvas);
         renderer.clearCanvas(mstCanvas);
         logger.clear();
+
+
+        graphCanvas.widthProperty().addListener((obs, old, newVal) -> redrawGraph());
+        graphCanvas.heightProperty().addListener((obs, old, newVal) -> redrawGraph());
+        mstCanvas.widthProperty().addListener((obs, old, newVal) -> redrawMST());
+        mstCanvas.heightProperty().addListener((obs, old, newVal) -> redrawMST());
+
+        // Первоначальная отрисовка
+        Platform.runLater(() -> {
+            redrawGraph();
+            redrawMST();
+        });
+    }
+
+    private void redrawGraph() {
+        if (graphCanvas.getWidth() <= 0 || graphCanvas.getHeight() <= 0) return;
+        if (currentGraph != null && !currentGraph.isEmpty()) {
+            renderer.drawGraph(currentGraph, graphCanvas);
+        } else {
+            renderer.clearCanvas(graphCanvas);
+        }
+    }
+
+    private void redrawMST() {
+        if (mstCanvas.getWidth() <= 0 || mstCanvas.getHeight() <= 0) return;
+        renderer.clearCanvas(mstCanvas);
     }
 
     @FXML
