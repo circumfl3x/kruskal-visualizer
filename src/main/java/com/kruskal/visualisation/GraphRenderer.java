@@ -18,9 +18,9 @@ import java.util.List;
  */
 public class GraphRenderer {
 
-    private static final double NODE_RADIUS = 15;
+    private static final double NODE_RADIUS = 17;
     private static final double EDGE_WEIGHT_OFFSET = 2;
-    private static final double FONT_SIZE = 14;
+    private static final double FONT_SIZE = 18;
     private static final Color NODE_COLOR = Color.DARKGRAY;
     private static final Color NODE_STROKE = Color.BLACK;
     private static final Color EDGE_COLOR = Color.BLACK;
@@ -134,7 +134,7 @@ public class GraphRenderer {
         gc.setFill(getContrastColor(fill));
         gc.setFont(Font.font(FONT_SIZE));
         gc.setTextAlign(TextAlignment.CENTER);
-        gc.fillText(String.valueOf(node.getId()), x, y);
+        gc.fillText(String.valueOf(node.getId()), x, y + 5);
     }
 
 

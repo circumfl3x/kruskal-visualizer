@@ -9,7 +9,7 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox spacing="10" style="-fx-padding: 10;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.kruskal.controller.MainController">
+<VBox spacing="10" style="-fx-padding: 10;" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.kruskal.controller.MainController">
 
     <VBox spacing="5">
         <HBox alignment="CENTER_LEFT" spacing="10">
@@ -43,12 +43,12 @@
     <HBox spacing="10" VBox.vgrow="ALWAYS">
         <VBox spacing="5" HBox.hgrow="ALWAYS">
             <Label style="-fx-font-weight: bold;" text="Original Graph" />
-            <Canvas fx:id="graphCanvas" height="600.0" style="-fx-border-color: #cccccc; -fx-border-width: 2; -fx-border-radius: 5;" width="500.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" />
+            <Canvas fx:id="graphCanvas" height="800.0" style="-fx-border-color: #cccccc; -fx-border-width: 2; -fx-border-radius: 5;" width="700.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" />
         </VBox>
 
         <VBox spacing="5" HBox.hgrow="ALWAYS">
             <Label style="-fx-font-weight: bold;" text="MST" />
-            <Canvas fx:id="mstCanvas" height="600.0" style="-fx-border-color: #cccccc; -fx-border-width: 2; -fx-border-radius: 5;" width="500.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" />
+            <Canvas fx:id="mstCanvas" height="800.0" style="-fx-border-color: #cccccc; -fx-border-width: 2; -fx-border-radius: 5;" width="700.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" />
         </VBox>
 
         <VBox spacing="5" HBox.hgrow="ALWAYS">
