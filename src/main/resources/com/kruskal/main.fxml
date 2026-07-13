@@ -1,69 +1,63 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
 <?import javafx.scene.canvas.Canvas?>
-<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx/21"
-      xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.kruskal.controller.MainController"
-      spacing="10"
-      style="-fx-padding: 10;">
+<VBox spacing="10" style="-fx-padding: 10;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.kruskal.controller.MainController">
 
     <VBox spacing="5">
-        <HBox spacing="10" alignment="CENTER_LEFT">
-            <Button text="Add Node" onAction="#onAddNode"/>
-            <Button text="Add Edge" onAction="#onAddEdge"/>
-            <Button text="Edit Weight" onAction="#onEditWeight"/>
+        <HBox alignment="CENTER_LEFT" spacing="10">
+            <Button onAction="#onAddNode" text="Add Node" />
+            <Button onAction="#onAddEdge" text="Add Edge" />
+            <Button onAction="#onEditWeight" text="Edit Weight" />
 
-            <Region HBox.hgrow="ALWAYS"/>
+            <Region HBox.hgrow="ALWAYS" />
 
-            <Button text="Save Graph" onAction="#onSaveGraph"/>
-            <Button text="Insert Graph" onAction="#onInsertGraph"/>
+            <Button onAction="#onSaveGraph" text="Save Graph" />
+            <Button onAction="#onInsertGraph" text="Insert Graph" />
         </HBox>
 
-        <HBox spacing="10" alignment="CENTER_LEFT">
-            <Button text="Delete Node" onAction="#onDeleteNode"/>
-            <Button text="Delete Edge" onAction="#onDeleteEdge"/>
+        <HBox alignment="CENTER_LEFT" spacing="10">
+            <Button onAction="#onDeleteNode" text="Delete Node" />
+            <Button onAction="#onDeleteEdge" text="Delete Edge" />
         </HBox>
     </VBox>
 
-    <HBox spacing="10" alignment="CENTER_LEFT">
-        <Button text="Generate Graph" onAction="#onGenerateGraph"/>
-        <Button text="Run Kruskal Auto" onAction="#onRunKruskalAuto"/>
-        <Label text="speed (ms):"/>
-        <TextField fx:id="speedTextField" prefWidth="80" text="2000"/>
-        <Button text="Run Kruskal Manual" onAction="#onRunKruskalManual"/>
-        <Button text="Prev Step" onAction="#onPrevStep"/>
-        <Button text="Next Step" onAction="#onNextStep"/>
-        <Button text="Clean" onAction="#onClean"/>
+    <HBox alignment="CENTER_LEFT" spacing="10">
+        <Button onAction="#onGenerateGraph" text="Generate Graph" />
+        <Button onAction="#onRunKruskalAuto" text="Run Kruskal Auto" />
+        <Label text="speed (ms):" />
+        <TextField fx:id="speedTextField" prefWidth="80" text="2000" />
+        <Button onAction="#onRunKruskalManual" text="Run Kruskal Manual" />
+        <Button onAction="#onPrevStep" text="Prev Step" />
+        <Button onAction="#onNextStep" text="Next Step" />
+        <Button onAction="#onClean" text="Clean" />
     </HBox>
 
     <HBox spacing="10" VBox.vgrow="ALWAYS">
         <VBox spacing="5" HBox.hgrow="ALWAYS">
-            <Label text="Original Graph" style="-fx-font-weight: bold;"/>
-            <Canvas fx:id="graphCanvas" width="400" height="500"
-                    style="-fx-border-color: #cccccc; -fx-border-width: 2; -fx-border-radius: 5;"
-                    VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS"/>
+            <Label style="-fx-font-weight: bold;" text="Original Graph" />
+            <Canvas fx:id="graphCanvas" height="600.0" style="-fx-border-color: #cccccc; -fx-border-width: 2; -fx-border-radius: 5;" width="500.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" />
         </VBox>
 
         <VBox spacing="5" HBox.hgrow="ALWAYS">
-            <Label text="MST" style="-fx-font-weight: bold;"/>
-            <Canvas fx:id="mstCanvas" width="400" height="500"
-                    style="-fx-border-color: #cccccc; -fx-border-width: 2; -fx-border-radius: 5;"
-                    VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS"/>
+            <Label style="-fx-font-weight: bold;" text="MST" />
+            <Canvas fx:id="mstCanvas" height="600.0" style="-fx-border-color: #cccccc; -fx-border-width: 2; -fx-border-radius: 5;" width="500.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" />
         </VBox>
 
         <VBox spacing="5" HBox.hgrow="ALWAYS">
-            <Label text="Steps" style="-fx-font-weight: bold;"/>
-            <TextArea fx:id="stepsTextArea" editable="false" wrapText="true"
-                      style="-fx-border-color: #cccccc; -fx-border-width: 2; -fx-border-radius: 5; -fx-font-family: monospace;"
-                      VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS"/>
+            <Label style="-fx-font-weight: bold;" text="Steps" />
+            <TextArea fx:id="stepsTextArea" editable="false" prefHeight="550.0" prefWidth="211.0" style="-fx-border-color: #cccccc; -fx-border-width: 2; -fx-border-radius: 5; -fx-font-family: monospace;" wrapText="true" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" />
         </VBox>
     </HBox>
 
     <HBox alignment="CENTER_LEFT">
-        <Button text="Info" onAction="#onInfo"/>
+        <Button onAction="#onInfo" text="Info" />
     </HBox>
 </VBox>

@@ -53,8 +53,8 @@ public class GraphGenerator {
             // Подбираем координаты, пока они не окажутся достаточно далеко
             // от уже существующих вершин
             do {
-                x = random.nextDouble() * 800;
-                y = random.nextDouble() * 600;
+                x = random.nextDouble() * 450;
+                y = random.nextDouble() * 450;
 
             } while (!isPositionAvailable(x, y, graph));
 
