@@ -12,8 +12,8 @@ import java.util.Random;
 public class GraphGenerator {
 
     private static final double MIN_DISTANCE = 50;
-    private static final double CANVAS_WIDTH = 500;   // из FXML
-    private static final double CANVAS_HEIGHT = 600;  // из FXML
+    private static final double CANVAS_WIDTH = 470;   // из FXML
+    private static final double CANVAS_HEIGHT = 470;  // из FXML
     private static final double MARGIN = 40;
 
     public Graph generate(int vertexCount, int edgeCount) {
