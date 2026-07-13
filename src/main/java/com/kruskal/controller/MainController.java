@@ -1,16 +1,25 @@
 package com.kruskal.controller;
 
+import com.kruskal.algorithm.KruskalAlgorithm;
+import com.kruskal.algorithm.AlgorithmStep;
+import com.kruskal.io.GraphFileReader;
+import com.kruskal.model.Edge;
+import com.kruskal.model.Graph;
+import com.kruskal.util.GraphGenerator;
+import com.kruskal.util.Logger;
+import com.kruskal.visualisation.GraphRenderer;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import com.kruskal.model.Graph;
-import com.kruskal.model.Node;
-import com.kruskal.model.Edge;
-import java.util.List;
+import javafx.stage.FileChooser;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 
 public class MainController {
 
@@ -27,26 +36,24 @@ public class MainController {
     private TextField speedTextField;
 
     private Graph currentGraph;
+    private GraphRenderer renderer;
+    private Logger logger;
+    private KruskalAlgorithm algorithm;
+    private GraphGenerator generator;
+    private GraphFileReader fileReader;
 
     @FXML
     public void initialize() {
-        System.out.println("Контроллер инициализирован");
-
+        renderer = new GraphRenderer();
+        logger = new Logger(stepsTextArea);
+        algorithm = new KruskalAlgorithm();
+        generator = new GraphGenerator();
+        fileReader = new GraphFileReader();
         currentGraph = new Graph(new ArrayList<>(), new ArrayList<>());
-        Node n0 = new Node(0, 100, 100);
-        Node n1 = new Node(1, 300, 100);
-        Node n2 = new Node(2, 200, 300);
-        currentGraph.addNode(n0);
-        currentGraph.addNode(n1);
-        currentGraph.addNode(n2);
-        currentGraph.addEdge(new Edge(n0, n1, 4));
-        currentGraph.addEdge(new Edge(n0, n2, 3));
-        currentGraph.addEdge(new Edge(n1, n2, 1));
 
-        drawGraph(graphCanvas, currentGraph);
-        drawPlaceholder(mstCanvas, "MST\n");
-        stepsTextArea.setText("Добро пожаловать!\n" +
-                "Загрузите граф или создайте его вручную.");
+        renderer.clearCanvas(graphCanvas);
+        renderer.clearCanvas(mstCanvas);
+        logger.clear();
     }
 
     @FXML
@@ -87,49 +94,87 @@ public class MainController {
 
     @FXML
     private void onInsertGraph() {
-        System.out.println("Insert Graph clicked");
-        stepsTextArea.appendText("\n[Действие] Загрузка графа из файла");
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Загрузить граф");
+        fileChooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("Текстовые файлы", "*.txt")
+        );
+
+        File file = fileChooser.showOpenDialog(graphCanvas.getScene().getWindow());
+        if (file != null) {
+            try {
+                currentGraph = fileReader.read(file.getAbsolutePath());
+                renderer.drawGraph(currentGraph, graphCanvas);
+                renderer.clearCanvas(mstCanvas);
+                logger.logGraphLoaded(file.getName(), currentGraph.getNodeCount(), currentGraph.getEdgeCount());
+            } catch (IOException e) {
+                logger.logError("Ошибка при загрузке графа: " + e.getMessage());
+                showErrorAlert("Ошибка загрузки", e.getMessage());
+            } catch (NumberFormatException e) {
+                logger.logError("Ошибка формата файла: " + e.getMessage());
+                showErrorAlert("Ошибка формата", e.getMessage());
+            }
+        }
     }
+
 
     @FXML
     private void onGenerateGraph() {
-        System.out.println("Generate Graph clicked");
-        stepsTextArea.appendText("\n[Действие] Генерация случайного графа");
+        try {
+            Random random = new Random();
+            int vertexCount = random.nextInt(3) + 4;
+
+            int maxEdges = (vertexCount * (vertexCount - 1)) / 2;
+            int minEdges = vertexCount - 1;
+
+            int maxAllowedEdges = (int) (maxEdges * 0.6); // 60% от максимума
+
+            int edgeCount;
+            if (maxAllowedEdges < minEdges + 2) {
+                // Для маленьких графов (4-5 вершин) делаем больше рёбер
+                edgeCount = Math.min(minEdges + 2, maxEdges);
+            } else {
+                // Генерируем от (дерево + 2) до 60% от максимума
+                int minEdgesWithExtra = Math.min(minEdges + 2, maxEdges);
+                edgeCount = random.nextInt(maxAllowedEdges - minEdgesWithExtra + 1) + minEdgesWithExtra;
+            }
+
+            currentGraph = generator.generate(vertexCount, edgeCount);
+            renderer.drawGraph(currentGraph, graphCanvas);
+            renderer.clearCanvas(mstCanvas);
+            logger.logGraphGenerated(vertexCount, edgeCount);
+        } catch (IllegalArgumentException e) {
+            logger.logError("Ошибка генерации: " + e.getMessage());
+            showErrorAlert("Ошибка генерации", e.getMessage());
+        }
     }
 
     @FXML
     private void onRunKruskalAuto() {
-        System.out.println("Run Kruskal Auto clicked");
-        stepsTextArea.appendText("\n[Действие] Запуск алгоритма Краскала (авто)");
-
         if (currentGraph == null || currentGraph.isEmpty()) {
-            stepsTextArea.appendText("\n[Ошибка] Граф пуст. Загрузите или создайте граф.");
+            logger.logError("Граф пуст. Загрузите или сгенерируйте граф перед запуском алгоритма.");
             return;
         }
 
-        List<Edge> sortedEdges = new ArrayList<>(currentGraph.getEdges());
-        Collections.sort(sortedEdges);
+        try {
+            List<AlgorithmStep> steps = algorithm.execute(currentGraph);
 
-        stepsTextArea.appendText("\nОтсортированные ребра:");
-        for (Edge edge : sortedEdges) {
-            stepsTextArea.appendText("\n  " + edge);
-        }
+            // Собираем рёбра, которые были добавлены в MST
+            List<Edge> mstEdges = new ArrayList<>();
+            int totalWeight = 0;
+            for (AlgorithmStep step : steps) {
+                if (step.isAdded()) {
+                    mstEdges.add(step.getEdge());
+                    totalWeight = step.getTotalWeight();
+                }
+            }
 
-        List<Edge> mstEdges = runKruskal(currentGraph);
-
-        int totalWeight = 0;
-        for (Edge edge : mstEdges) {
-            totalWeight += edge.getWeight();
-        }
-
-        drawMST(mstCanvas, currentGraph, mstEdges);
-
-        stepsTextArea.appendText("\n\nИтоговый результат:");
-        stepsTextArea.appendText("\nОбщий вес: " + totalWeight);
-        stepsTextArea.appendText("\nКоличество ребер: " + mstEdges.size());
-        stepsTextArea.appendText("\nСписок ребер:");
-        for (Edge edge : mstEdges) {
-            stepsTextArea.appendText("\n  " + edge);
+            renderer.drawMST(currentGraph, mstEdges, mstCanvas);
+            logger.logSortedEdges(currentGraph.getEdges().stream().sorted().toList());
+            logger.logResult(totalWeight, mstEdges, currentGraph.getNodeCount());
+        } catch (IllegalArgumentException e) {
+            logger.logError(e.getMessage());
+            showErrorAlert("Ошибка алгоритма", e.getMessage());
         }
     }
 
@@ -153,8 +198,12 @@ public class MainController {
 
     @FXML
     private void onClean() {
-        System.out.println("Clean clicked");
-        stepsTextArea.appendText("\n[Действие] Очистить");
+        if (currentGraph != null) {
+            currentGraph.clear();
+        }
+        renderer.clearCanvas(graphCanvas);
+        renderer.clearCanvas(mstCanvas);
+        logger.clear();
     }
 
     @FXML
@@ -163,102 +212,11 @@ public class MainController {
         stepsTextArea.appendText("\n[Действие] Информация");
     }
 
-    private void drawPlaceholder(Canvas canvas, String text) {
-        var gc = canvas.getGraphicsContext2D();
-        gc.setFill(javafx.scene.paint.Color.LIGHTGRAY);
-        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-        gc.setFill(javafx.scene.paint.Color.DARKGRAY);
-        gc.fillText(text, canvas.getWidth() / 2 - 50, canvas.getHeight() / 2);
-    }
-
-    private void drawGraph(Canvas canvas, Graph graph) {
-        var gc = canvas.getGraphicsContext2D();
-        gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
-
-        gc.setStroke(javafx.scene.paint.Color.BLACK);
-        gc.setLineWidth(2);
-        for (Edge edge : graph.getEdges()) {
-            Node n1 = edge.getNode1();
-            Node n2 = edge.getNode2();
-            gc.strokeLine(n1.getX(), n1.getY(), n2.getX(), n2.getY());
-
-            double midX = (n1.getX() + n2.getX()) / 2;
-            double midY = (n1.getY() + n2.getY()) / 2;
-            gc.setFill(javafx.scene.paint.Color.BLACK);
-            gc.fillText(String.valueOf(edge.getWeight()), midX, midY);
-        }
-
-        for (Node node : graph.getNodes()) {
-            gc.setFill(javafx.scene.paint.Color.LIGHTGRAY);
-            gc.fillOval(node.getX() - 15, node.getY() - 15, 30, 30);
-            gc.setStroke(javafx.scene.paint.Color.BLACK);
-            gc.setLineWidth(2);
-            gc.strokeOval(node.getX() - 15, node.getY() - 15, 30, 30);
-
-
-            gc.setFill(javafx.scene.paint.Color.BLACK);
-            gc.fillText(String.valueOf(node.getId()), node.getX() - 5, node.getY() + 5);
-        }
-    }
-
-    private void drawMST(Canvas canvas, Graph graph, List<Edge> mstEdges) {
-        var gc = canvas.getGraphicsContext2D();
-        gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
-
-        gc.setStroke(javafx.scene.paint.Color.GREEN);
-        gc.setLineWidth(3);
-        for (Edge edge : mstEdges) {
-            Node n1 = edge.getNode1();
-            Node n2 = edge.getNode2();
-            gc.strokeLine(n1.getX(), n1.getY(), n2.getX(), n2.getY());
-
-            double midX = (n1.getX() + n2.getX()) / 2;
-            double midY = (n1.getY() + n2.getY()) / 2;
-            gc.setFill(javafx.scene.paint.Color.GREEN);
-            gc.fillText(String.valueOf(edge.getWeight()), midX, midY);
-        }
-
-        for (Node node : graph.getNodes()) {
-            gc.setFill(javafx.scene.paint.Color.LIGHTGRAY);
-            gc.fillOval(node.getX() - 15, node.getY() - 15, 30, 30);
-            gc.setStroke(javafx.scene.paint.Color.BLACK);
-            gc.setLineWidth(2);
-            gc.strokeOval(node.getX() - 15, node.getY() - 15, 30, 30);
-
-            gc.setFill(javafx.scene.paint.Color.BLACK);
-            gc.fillText(String.valueOf(node.getId()), node.getX() - 5, node.getY() + 5);
-        }
-    }
-
-    private List<Edge> runKruskal(Graph graph) {
-        List<Edge> sortedEdges = new ArrayList<>(graph.getEdges());
-        Collections.sort(sortedEdges);
-
-        int[] parent = new int[graph.getNodeCount()];
-        for (int i = 0; i < parent.length; i++) {
-            parent[i] = i;
-        }
-
-        List<Edge> mstEdges = new ArrayList<>();
-        for (Edge edge : sortedEdges) {
-            int root1 = find(parent, edge.getNode1().getId());
-            int root2 = find(parent, edge.getNode2().getId());
-
-            if (root1 != root2) {
-                mstEdges.add(edge);
-                union(parent, root1, root2);
-            }
-        }
-
-        return mstEdges;
-    }
-
-    private int find(int[] parent, int i) {
-        if (parent[i] == i) return i;
-        return find(parent, parent[i]);
-    }
-
-    private void union(int[] parent, int i, int j) {
-        parent[i] = j;
+    private void showErrorAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }
