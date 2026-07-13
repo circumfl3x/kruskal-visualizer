@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Random;
 
 public class GraphGenerator {
-
     private static final double MIN_DISTANCE = 50;
     private static final double CANVAS_WIDTH = 470;
     private static final double CANVAS_HEIGHT = 470;
@@ -81,5 +80,40 @@ public class GraphGenerator {
             }
         }
         return true;
+    }
+
+    private boolean isPositionAvailableForExistingNode(double x, double y, Graph graph, Node currentNode) {
+        for (Node node : graph.getNodes()) {
+            if (node == currentNode) {
+                continue;
+            }
+
+            double dx = node.getX() - x;
+            double dy = node.getY() - y;
+            if (Math.sqrt(dx * dx + dy * dy) < MIN_DISTANCE) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public void generateNodePositions(Graph graph, double canvasWidth, double canvasHeight) {
+        if (graph == null) {
+            throw new IllegalArgumentException("Граф не может быть null.");
+        }
+
+        Random random = new Random();
+        for (Node node : graph.getNodes()) {
+            double x;
+            double y;
+
+            do {
+                x = MARGIN + random.nextDouble() * (canvasWidth - 2 * MARGIN);
+                y = MARGIN + random.nextDouble() * (canvasHeight - 2 * MARGIN);
+            } while (!isPositionAvailableForExistingNode(x, y, graph, node));
+
+            node.setX(x);
+            node.setY(y);
+        }
     }
 }
