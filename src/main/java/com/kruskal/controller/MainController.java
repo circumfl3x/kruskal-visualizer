@@ -1,6 +1,7 @@
 package com.kruskal.controller;
 
 import com.kruskal.algorithm.KruskalAlgorithm;
+import com.kruskal.algorithm.VisualizationStep;
 import com.kruskal.algorithm.AlgorithmStep;
 import com.kruskal.io.GraphFileReader;
 import com.kruskal.model.Edge;
@@ -52,6 +53,10 @@ public class MainController {
     private GraphFileWriter fileWriter;
     private List<Edge> lastMSTEdges;
 
+    // Для визуализации
+    private List<VisualizationStep> steps;
+    private int currentStepIndex;
+
     @FXML
     public void initialize() {
         renderer = new GraphRenderer();
@@ -61,7 +66,9 @@ public class MainController {
         fileReader = new GraphFileReader();
         fileWriter = new GraphFileWriter();
         currentGraph = new Graph(new ArrayList<>(), new ArrayList<>());
-        lastMSTEdges = new ArrayList<>();
+
+        steps = new ArrayList<>();
+        currentStepIndex = -1;
 
         graphGroup.getChildren().clear();
         mstGroup.getChildren().clear();
@@ -69,23 +76,6 @@ public class MainController {
 
     }
 
-    private void redrawGraph() {
-        if (graphContainer.getWidth() <= 0 || graphContainer.getHeight() <= 0) return;
-        if (currentGraph != null && !currentGraph.isEmpty()) {
-            renderer.renderGraph(currentGraph, graphGroup);
-        } else {
-            graphGroup.getChildren().clear();
-        }
-    }
-
-    private void redrawMST() {
-        if (mstContainer.getWidth() <= 0 || mstContainer.getHeight() <= 0) return;
-        if (currentGraph != null && !lastMSTEdges.isEmpty()) {
-            renderer.renderMST(currentGraph, lastMSTEdges, mstGroup);
-        } else {
-            mstGroup.getChildren().clear();
-        }
-    }
 
     @FXML
     private void onAddNode() {
@@ -159,9 +149,10 @@ public class MainController {
         if (file != null) {
             try {
                 currentGraph = fileReader.read(file.getAbsolutePath());
+                steps = null;
+                currentStepIndex = -1;
                 renderer.renderGraph(currentGraph, graphGroup);
                 mstGroup.getChildren().clear();
-                lastMSTEdges.clear();
                 logger.logGraphLoaded(file.getName(), currentGraph.getNodeCount(), currentGraph.getEdgeCount());
             } catch (IOException e) {
                 logger.logError("Ошибка при загрузке графа: " + e.getMessage());
@@ -195,8 +186,9 @@ public class MainController {
             currentGraph = generator.generate(vertexCount, edgeCount);
             renderer.renderGraph(currentGraph, graphGroup);
             mstGroup.getChildren().clear();
-            lastMSTEdges.clear();
             logger.logGraphGenerated(vertexCount, edgeCount);
+            steps = null;
+            currentStepIndex = -1;
         } catch (IllegalArgumentException e) {
             logger.logError("Ошибка генерации: " + e.getMessage());
             showErrorAlert("Ошибка генерации", e.getMessage());
@@ -222,7 +214,6 @@ public class MainController {
                 }
             }
 
-            lastMSTEdges = mstEdges;
             renderer.renderMST(currentGraph, mstEdges, mstGroup);
             logger.logSortedEdges(currentGraph.getEdges().stream().sorted().toList());
             logger.logResult(totalWeight, mstEdges, currentGraph.getNodeCount());
@@ -234,20 +225,48 @@ public class MainController {
 
     @FXML
     private void onRunKruskalManual() {
-        System.out.println("Run Kruskal Manual clicked");
-        stepsTextArea.appendText("\n[Действие] Запуск алгоритма Краскала (пошагово)");
+        if (currentGraph == null || currentGraph.isEmpty()) {
+            logger.logError("Граф пуст. Загрузите или сгенерируйте граф перед запуском алгоритма.");
+            return;
+        }
+        try {
+            steps = algorithm.executeWithStates(currentGraph);
+            logger.logSortedEdges(currentGraph.getEdges().stream().sorted().toList());
+            currentStepIndex = 0;
+            renderStep(currentStepIndex);
+            logger.log("Пошаговый режим запущен. Используйте кнопки Prev/Next для навигации.");
+        } catch (IllegalArgumentException e) {
+            logger.logError(e.getMessage());
+            showErrorAlert("Ошибка алгоритма", e.getMessage());
+        }
     }
 
     @FXML
     private void onPrevStep() {
-        System.out.println("Prev Step clicked");
-        stepsTextArea.appendText("\n[Действие] Предыдущий шаг");
+        if (steps == null || steps.isEmpty()) {
+            logger.log("Сначала запустите алгоритм (Run Kruskal Manual).");
+            return;
+        }
+        if (currentStepIndex > 0) {
+            currentStepIndex--;
+            renderStep(currentStepIndex);
+        } else {
+            logger.log("Это первый шаг.");
+        }
     }
 
     @FXML
     private void onNextStep() {
-        System.out.println("Next Step clicked");
-        stepsTextArea.appendText("\n[Действие] Следующий шаг");
+        if (steps == null || steps.isEmpty()) {
+            logger.log("Сначала запустите алгоритм (Run Kruskal Manual).");
+            return;
+        }
+        if (currentStepIndex < steps.size() - 1) {
+            currentStepIndex++;
+            renderStep(currentStepIndex);
+        } else {
+            logger.log("Достигнут последний шаг.");
+        }
     }
 
     @FXML
@@ -257,14 +276,23 @@ public class MainController {
         }
         graphGroup.getChildren().clear();
         mstGroup.getChildren().clear();
-        lastMSTEdges.clear();
         logger.clear();
+        steps = null;
+        currentStepIndex = -1;
     }
 
     @FXML
     private void onInfo() {
         System.out.println("Info clicked");
         stepsTextArea.appendText("\n[Действие] Информация");
+    }
+
+    // Вспомогательный метод:
+    private void renderStep(int index) {
+        VisualizationStep step = steps.get(index);
+        renderer.renderStep(currentGraph, step, graphGroup);
+        renderer.renderMSTStep(currentGraph, step, mstGroup);
+        logger.log(step.getDescription());
     }
 
     private void showErrorAlert(String title, String message) {

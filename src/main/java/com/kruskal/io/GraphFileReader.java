@@ -21,8 +21,8 @@ import java.util.ArrayList;
  */
 
 public class GraphFileReader {
-    private static final double DEFAULT_CANVAS_WIDTH = 800;
-    private static final double DEFAULT_CANVAS_HEIGHT = 600;
+    private static final double DEFAULT_CANVAS_WIDTH = 470;
+    private static final double DEFAULT_CANVAS_HEIGHT = 470;
     public Graph read(String fileName) throws IOException {
         Graph graph = new Graph(new ArrayList<>(), new ArrayList<>());
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
