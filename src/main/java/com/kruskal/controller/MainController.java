@@ -22,6 +22,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.util.Duration;
+
 public class MainController {
 
     @FXML
@@ -50,6 +54,13 @@ public class MainController {
     private GraphFileReader fileReader;
     private List<Edge> lastMSTEdges;
 
+    private Timeline animationTimeline;
+    private List<AlgorithmStep> currentSteps;
+    private int currentStepIndex;
+    private boolean isAnimating;
+    private List<Edge> addedEdgesSoFar;
+    private boolean isPaused = false;
+
     @FXML
     public void initialize() {
         renderer = new GraphRenderer();
@@ -59,6 +70,12 @@ public class MainController {
         fileReader = new GraphFileReader();
         currentGraph = new Graph(new ArrayList<>(), new ArrayList<>());
         lastMSTEdges = new ArrayList<>();
+
+        currentSteps = new ArrayList<>();
+        addedEdgesSoFar = new ArrayList<>();
+        currentStepIndex = 0;
+        isAnimating = false;
+        animationTimeline = null;
 
         graphGroup.getChildren().clear();
         mstGroup.getChildren().clear();
@@ -178,30 +195,65 @@ public class MainController {
 
     @FXML
     private void onRunKruskalAuto() {
-        if (currentGraph == null || currentGraph.isEmpty()) {
-            logger.logError("Граф пуст. Загрузите или сгенерируйте граф перед запуском алгоритма.");
+        if (currentSteps == null || currentSteps.isEmpty()) {
+            if (currentGraph == null || currentGraph.isEmpty()) {
+                logger.logError("Граф пуст. Загрузите или сгенерируйте граф перед запуском алгоритма.");
+                return;
+            }
+
+            try {
+                currentSteps = algorithm.execute(currentGraph);
+
+                if (currentSteps.isEmpty()) {
+                    logger.logError("Алгоритм не сгенерировал шагов.");
+                    return;
+                }
+
+                currentStepIndex = 0;
+                addedEdgesSoFar.clear();
+                isAnimating = true;
+                isPaused = false;
+
+                mstGroup.getChildren().clear();
+
+                if (graphGroup.getChildren().isEmpty()) {
+                    renderer.renderGraph(currentGraph, graphGroup);
+                }
+
+                logger.logAlgorithmStarted();
+                logger.logSortedEdges(currentGraph.getEdges().stream().sorted().toList());
+
+                int speed = getSpeedFromTextField();
+
+                animationTimeline = new Timeline(
+                        new KeyFrame(Duration.millis(speed), event -> processNextStep())
+                );
+                animationTimeline.setCycleCount(currentSteps.size());
+                animationTimeline.setOnFinished(event -> onAnimationFinished());
+                animationTimeline.play();
+
+            } catch (IllegalArgumentException e) {
+                logger.logError(e.getMessage());
+                showErrorAlert("Ошибка алгоритма", e.getMessage());
+            }
             return;
         }
 
-        try {
-            List<AlgorithmStep> steps = algorithm.execute(currentGraph);
-
-            List<Edge> mstEdges = new ArrayList<>();
-            int totalWeight = 0;
-            for (AlgorithmStep step : steps) {
-                if (step.isAdded()) {
-                    mstEdges.add(step.getEdge());
-                    totalWeight = step.getTotalWeight();
-                }
+        if (isAnimating && !isPaused) {
+            if (animationTimeline != null) {
+                animationTimeline.pause();
+                isPaused = true;
+                logger.log("⏸ Пауза. Нажмите Run Kruskal Auto для продолжения.");
             }
+            return;
+        }
 
-            lastMSTEdges = mstEdges;
-            renderer.renderMST(currentGraph, mstEdges, mstGroup);
-            logger.logSortedEdges(currentGraph.getEdges().stream().sorted().toList());
-            logger.logResult(totalWeight, mstEdges, currentGraph.getNodeCount());
-        } catch (IllegalArgumentException e) {
-            logger.logError(e.getMessage());
-            showErrorAlert("Ошибка алгоритма", e.getMessage());
+        if (isAnimating && isPaused) {
+            if (animationTimeline != null) {
+                animationTimeline.play();
+                isPaused = false;
+                logger.log("▶ Продолжение выполнения...");
+            };
         }
     }
 
@@ -232,6 +284,17 @@ public class MainController {
         mstGroup.getChildren().clear();
         lastMSTEdges.clear();
         logger.clear();
+
+        // Остановить анимацию и сбросить состояние
+        if (animationTimeline != null) {
+            animationTimeline.stop();
+            animationTimeline = null;
+        }
+        currentSteps = null;
+        currentStepIndex = 0;
+        addedEdgesSoFar.clear();
+        isAnimating = false;
+        isPaused = false;
     }
 
     @FXML
@@ -246,5 +309,54 @@ public class MainController {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    private void processNextStep() {
+        if (currentStepIndex >= currentSteps.size()) {
+            return;
+        }
+
+        AlgorithmStep step = currentSteps.get(currentStepIndex);
+        Edge currentEdge = step.getEdge();
+
+        renderer.renderGraphWithHighlight(currentGraph, graphGroup, currentEdge, step.isAdded());
+
+        if (step.isAdded()) {
+            addedEdgesSoFar.add(currentEdge);
+            renderer.renderMSTPartial(currentGraph, addedEdgesSoFar, mstGroup);
+        } else {
+            renderer.renderMSTPartial(currentGraph, addedEdgesSoFar, mstGroup);
+        }
+
+        String logMessage = String.format(
+                "Шаг %d/%d: %s",
+                currentStepIndex + 1,
+                currentSteps.size(),
+                step.getDescription()
+        );
+        logger.log(logMessage);
+
+        currentStepIndex++;
+    }
+
+    private void onAnimationFinished() {
+        isAnimating = false;
+        isPaused = false;
+        animationTimeline = null;
+
+        int totalWeight = currentSteps.isEmpty() ? 0 : currentSteps.get(currentSteps.size() - 1).getTotalWeight();
+        logger.logResult(totalWeight, addedEdgesSoFar, currentGraph.getNodeCount());
+        lastMSTEdges = new ArrayList<>(addedEdgesSoFar);
+
+        currentSteps = null;
+    }
+
+    private int getSpeedFromTextField() {
+        try {
+            int speed = Integer.parseInt(speedTextField.getText().trim());
+            return Math.max(speed, 100);
+        } catch (NumberFormatException e) {
+            return 2000;
+        }
     }
 }

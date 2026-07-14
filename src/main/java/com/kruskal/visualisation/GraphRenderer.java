@@ -180,4 +180,90 @@ public class GraphRenderer {
     public static double getNodeRadius() {
         return NODE_RADIUS;
     }
+
+    /**
+     * Отрисовывает граф на левом холсте с подсветкой текущего ребра.
+     *
+     * @param graph            граф для отрисовки
+     * @param group            группа JavaFX для добавления узлов
+     * @param highlightedEdge  ребро, которое нужно подсветить (может быть null)
+     * @param isAdded          true, если ребро добавляется в MST (зелёный), false если отклоняется (красный)
+     */
+    public void renderGraphWithHighlight(Graph graph, Group group, Edge highlightedEdge, boolean isAdded) {
+        group.getChildren().clear();
+        if (graph == null || graph.isEmpty()) return;
+
+        for (Edge edge : graph.getEdges()) {
+            Color color;
+            if (edge.equals(highlightedEdge)) {
+                color = isAdded ? Color.LIME : Color.ORANGE;
+            } else {
+                color = EDGE_COLOR;
+            }
+            group.getChildren().add(createEdge(edge, color, false));
+        }
+
+        for (Node node : graph.getNodes()) {
+            boolean isHighlighted = highlightedEdge != null &&
+                    (highlightedEdge.getNode1().equals(node) ||
+                            highlightedEdge.getNode2().equals(node));
+            group.getChildren().add(createNodeWithHighlight(node, isHighlighted));
+        }
+
+        for (Edge edge : graph.getEdges()) {
+            group.getChildren().add(createEdgeWeight(edge));
+        }
+    }
+
+    /**
+     * Отрисовывает частично построенное минимальное остовное дерево на правом холсте.
+     *
+     * @param graph       исходный граф (нужен для получения вершин)
+     * @param addedEdges  список рёбер, уже добавленных в MST
+     * @param group       группа JavaFX для добавления узлов
+     */
+    public void renderMSTPartial(Graph graph, List<Edge> addedEdges, Group group) {
+        group.getChildren().clear();
+        if (graph == null || graph.isEmpty()) return;
+
+        for (Node node : graph.getNodes()) {
+            group.getChildren().add(createNode(node, NODE_COLOR, NODE_STROKE));
+        }
+
+        for (Edge edge : addedEdges) {
+            group.getChildren().add(createEdge(edge, MST_EDGE_COLOR, true));
+        }
+
+        for (Edge edge : addedEdges) {
+            group.getChildren().add(createEdgeWeight(edge));
+        }
+    }
+
+    /**
+     * Создаёт узел (вершину) с возможностью подсветки.
+     *
+     * @param node           вершина
+     * @param isHighlighted  true, если вершину нужно подсветить золотой обводкой
+     * @return JavaFX-узел (группа из круга и текста)
+     */
+    private javafx.scene.Node createNodeWithHighlight(Node node, boolean isHighlighted) {
+        double x = node.getX();
+        double y = node.getY();
+
+        Circle circle = new Circle(x, y, NODE_RADIUS);
+        circle.setFill(NODE_COLOR);
+        circle.setStroke(isHighlighted ? Color.GOLD : NODE_STROKE);
+        circle.setStrokeWidth(isHighlighted ? 4 : 2);
+
+        Text text = new Text(String.valueOf(node.getId()));
+        text.setFill(getContrastColor(NODE_COLOR));
+        text.setFont(Font.font(FONT_SIZE));
+        text.setBoundsType(TextBoundsType.VISUAL);
+        double textWidth = text.getLayoutBounds().getWidth();
+        double textHeight = text.getLayoutBounds().getHeight();
+        text.setX(x - textWidth / 2);
+        text.setY(y + textHeight / 4);
+
+        return new Group(circle, text);
+    }
 }
