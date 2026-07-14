@@ -1,5 +1,7 @@
 package com.kruskal.visualisation;
 
+import com.kruskal.algorithm.EdgeStatus;
+import com.kruskal.algorithm.VisualizationStep;
 import com.kruskal.model.Edge;
 import com.kruskal.model.Graph;
 import com.kruskal.model.Node;
@@ -66,6 +68,70 @@ public class GraphRenderer {
         }
     }
 
+    public void renderStep(Graph graph, VisualizationStep step, Group group) {
+        group.getChildren().clear();
+        if (graph == null || graph.isEmpty()) return;
+
+        // Рёбра
+        for (Edge edge : graph.getEdges()) {
+            EdgeStatus status = step.getStatus(edge);
+            Color color;
+            double width;
+            boolean isMST = false;
+            switch (status) {
+                case CURRENT:
+                    color = Color.ORANGE;
+                    width = 4;
+                    break;
+                case ADDED:
+                    color = MST_EDGE_COLOR;
+                    width = 3;
+                    isMST = true;
+                    break;
+                case REJECTED:
+                    color = Color.RED;
+                    width = 2;
+                    break;
+                default:
+                    color = EDGE_COLOR;
+                    width = 2;
+                    break;
+            }
+            group.getChildren().add(createEdgeWithStyle(edge, color, width, isMST));
+        }
+
+        // Вершины: всегда серые, подсветка жёлтым для текущего ребра
+        Edge currentEdge = step.getCurrentEdge();
+        for (Node node : graph.getNodes()) {
+            boolean highlighted = currentEdge != null &&
+                    (currentEdge.getNode1().equals(node) || currentEdge.getNode2().equals(node));
+            group.getChildren().add(createNodeWithColor(node, NODE_COLOR, highlighted));
+        }
+
+        // Веса
+        for (Edge edge : graph.getEdges()) {
+            group.getChildren().add(createEdgeWeight(edge));
+        }
+    }
+
+    /**
+     * Рендер текущего шага на правом холсте.
+     */
+    public void renderMSTStep(Graph graph, VisualizationStep step, Group group) {
+        group.getChildren().clear();
+        if (graph == null || graph.isEmpty()) return;
+
+        for (Edge edge : step.getMstEdges()) {
+            group.getChildren().add(createEdge(edge, MST_EDGE_COLOR, true));
+        }
+        for (Node node : graph.getNodes()) {
+            group.getChildren().add(createNodeWithColor(node, step.getColor(node), false));
+        }
+        for (Edge edge : step.getMstEdges()) {
+            group.getChildren().add(createEdgeWeight(edge));
+        }
+    }
+
     private javafx.scene.Node createNode(Node node, Color fill, Color stroke) {
         double x = node.getX();
         double y = node.getY();
@@ -91,8 +157,7 @@ public class GraphRenderer {
         text.setX(x - textWidth / 2);
         text.setY(y + textHeight / 4);
 
-        Group nodeGroup = new Group(circle, text);
-        return nodeGroup;
+        return new Group(circle, text);
     }
 
     private javafx.scene.Node createEdge(Edge edge, Color color, boolean isMSTEdge) {
@@ -112,6 +177,36 @@ public class GraphRenderer {
         Line line = new Line(startX, startY, endX, endY);
         line.setStroke(color);
         line.setStrokeWidth(isMSTEdge ? 4 : 2);
+
+        if (isMSTEdge) {
+            Line outline = new Line(startX, startY, endX, endY);
+            outline.setStroke(MST_EDGE_STROKE);
+            outline.setStrokeWidth(1);
+            return new Group(outline, line);
+        }
+        return line;
+    }
+
+    /**
+     * Создаёт ребро с произвольным цветом, шириной и возможной обводкой.
+     */
+    private javafx.scene.Node createEdgeWithStyle(Edge edge, Color color, double width, boolean isMSTEdge) {
+        Node node1 = edge.getNode1();
+        Node node2 = edge.getNode2();
+        double x1 = node1.getX();
+        double y1 = node1.getY();
+        double x2 = node2.getX();
+        double y2 = node2.getY();
+
+        double angle = Math.atan2(y2 - y1, x2 - x1);
+        double startX = x1 + NODE_RADIUS * Math.cos(angle);
+        double startY = y1 + NODE_RADIUS * Math.sin(angle);
+        double endX = x2 - NODE_RADIUS * Math.cos(angle);
+        double endY = y2 - NODE_RADIUS * Math.sin(angle);
+
+        Line line = new Line(startX, startY, endX, endY);
+        line.setStroke(color);
+        line.setStrokeWidth(width);
 
         if (isMSTEdge) {
             Line outline = new Line(startX, startY, endX, endY);
@@ -149,7 +244,7 @@ public class GraphRenderer {
     }
 
     /**
-     * Вершина с произвольным цветом. (Для визуализации шагов)
+     * Вершина с произвольным цветом и подсветкой.
      */
     public javafx.scene.Node createNodeWithColor(Node node, Color color, boolean isHighlighted) {
         double x = node.getX();
