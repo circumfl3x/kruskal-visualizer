@@ -66,23 +66,6 @@ public class MainController {
 
     }
 
-    private void redrawGraph() {
-        if (graphContainer.getWidth() <= 0 || graphContainer.getHeight() <= 0) return;
-        if (currentGraph != null && !currentGraph.isEmpty()) {
-            renderer.renderGraph(currentGraph, graphGroup);
-        } else {
-            graphGroup.getChildren().clear();
-        }
-    }
-
-    private void redrawMST() {
-        if (mstContainer.getWidth() <= 0 || mstContainer.getHeight() <= 0) return;
-        if (currentGraph != null && !lastMSTEdges.isEmpty()) {
-            renderer.renderMST(currentGraph, lastMSTEdges, mstGroup);
-        } else {
-            mstGroup.getChildren().clear();
-        }
-    }
 
     @FXML
     private void onAddNode() {
