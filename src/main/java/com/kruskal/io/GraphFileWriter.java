@@ -26,6 +26,10 @@ public class GraphFileWriter {
             throw new IllegalArgumentException("Имя файла не может быть пустым.");
         }
 
+        if (!fileName.toLowerCase().endsWith(".txt")) {
+            fileName += ".txt";
+        }
+        
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
             // Маркер нового формата
             writer.write("COORDS");

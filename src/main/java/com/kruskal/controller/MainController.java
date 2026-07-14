@@ -124,8 +124,6 @@ public class MainController {
         File file = fileChooser.showSaveDialog(graphContainer.getScene().getWindow());
         if (file == null) {
             return;
-        } else if (file != null && !file.getName().toLowerCase().endsWith(".txt")) {
-            file = new File(file.getAbsolutePath() + ".txt");
         }
 
         try {
