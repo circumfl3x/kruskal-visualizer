@@ -5,7 +5,6 @@ import com.kruskal.model.Graph;
 import com.kruskal.model.Node;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -25,10 +24,6 @@ public class GraphFileWriter {
 
         if (fileName.isBlank()) {
             throw new IllegalArgumentException("Имя файла не может быть пустым.");
-        }
-        
-        if (!fileName.toLowerCase().endsWith(".txt")) {
-            fileName += ".txt";
         }
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
