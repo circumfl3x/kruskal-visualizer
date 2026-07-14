@@ -86,6 +86,13 @@ public class Logger {
     }
 
     /**
+     * Выводит информацию о сохранении графа в файл.
+     */
+    public void logGraphSaved(String fileName) {
+        textArea.appendText("\nГраф успешно сохранён: " + fileName);
+    }
+
+    /**
      * Выводит сообщение о начале выполнения алгоритма.
      */
     public void logAlgorithmStarted() {

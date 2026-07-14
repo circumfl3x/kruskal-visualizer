@@ -8,6 +8,7 @@ import com.kruskal.model.Graph;
 import com.kruskal.util.GraphGenerator;
 import com.kruskal.util.Logger;
 import com.kruskal.visualisation.GraphRenderer;
+import com.kruskal.io.GraphFileWriter;
 import javafx.fxml.FXML;
 import javafx.scene.Group;
 import javafx.scene.control.Alert;
@@ -48,6 +49,7 @@ public class MainController {
     private KruskalAlgorithm algorithm;
     private GraphGenerator generator;
     private GraphFileReader fileReader;
+    private GraphFileWriter fileWriter;
     private List<Edge> lastMSTEdges;
 
     @FXML
@@ -57,6 +59,7 @@ public class MainController {
         algorithm = new KruskalAlgorithm();
         generator = new GraphGenerator();
         fileReader = new GraphFileReader();
+        fileWriter = new GraphFileWriter();
         currentGraph = new Graph(new ArrayList<>(), new ArrayList<>());
         lastMSTEdges = new ArrayList<>();
 
@@ -116,8 +119,32 @@ public class MainController {
 
     @FXML
     private void onSaveGraph() {
-        System.out.println("Save Graph clicked");
-        stepsTextArea.appendText("\n[Действие] Сохранение графа в файл");
+        if (currentGraph == null || currentGraph.isEmpty()) {
+            logger.logError("Нет графа для сохранения.");
+            showErrorAlert("Ошибка", "Нет графа для сохранения.");
+            return;
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Сохранить граф");
+        fileChooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("Текстовые файлы", "*.txt")
+        );
+
+        File file = fileChooser.showSaveDialog(graphContainer.getScene().getWindow());
+        if (file == null) {
+            return;
+        } else if (file != null && !file.getName().toLowerCase().endsWith(".txt")) {
+            file = new File(file.getAbsolutePath() + ".txt");
+        }
+
+        try {
+            fileWriter.write(currentGraph, file.getAbsolutePath());
+            logger.logGraphSaved(file.getName());
+        } catch (IOException e) {
+            logger.logError("Ошибка сохранения: " + e.getMessage());
+            showErrorAlert("Ошибка сохранения", e.getMessage());
+        }
     }
 
     @FXML
