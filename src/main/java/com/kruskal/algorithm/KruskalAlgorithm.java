@@ -38,7 +38,7 @@ public class KruskalAlgorithm {
             if (dsu.union(nodeId1, nodeId2)) {
                 totalWeigh += edge.getWeight();
                 String description = "Ребро " + nodeId1 + "-" + nodeId2 + "("
-                        + edge.getWeight() + ") добавлено в MST. Текущий вес: " + totalWeigh;
+                        + edge.getWeight() + ") добавлено в остовное дерево. Текущий вес: " + totalWeigh;
                 steps.add(new AlgorithmStep(edge, true, description, totalWeigh));
             } else {
                 String description = "Ребро " + nodeId1 + "-" + nodeId2 + "("
@@ -155,7 +155,6 @@ public class KruskalAlgorithm {
             }
         }
 
-        // Финальное состояние с подробным сообщением
         StringBuilder finalDesc = new StringBuilder();
         finalDesc.append("Алгоритм Краскала завершён.\n");
         finalDesc.append("Минимальное остовное дерево содержит ").append(mstEdges.size()).append(" рёбер.\n");
