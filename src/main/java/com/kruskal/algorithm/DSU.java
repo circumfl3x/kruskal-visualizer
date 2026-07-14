@@ -1,5 +1,13 @@
 package com.kruskal.algorithm;
 
+import com.kruskal.model.Graph;
+import com.kruskal.model.Node;
+import com.kruskal.util.ColorGenerator;
+import javafx.scene.paint.Color;
+
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Система непересекающихся множеств.
  * Используется для проверки, образует ли ребро цикл.
@@ -9,14 +17,17 @@ public class DSU {
 
     private final int[] parent;
     private final int[] rank;
+    private final Color[] rootColors;
 
     // Создает систему множеств для всех n элементов; изначально у каждого эл-та свое множество.
     public DSU(int n) {
         parent = new int[n];
         rank = new int[n];
+        rootColors = new Color[n];
         for (int i = 0; i < n; i++) {
             parent[i] = i;
             rank[i] = 0;
+            rootColors[i] = ColorGenerator.getColorForIndex(i);
         }
     }
 
@@ -47,13 +58,27 @@ public class DSU {
         }
 
         // объединение по рангу
-        if (rank[rootX] < rank[rootY]) {parent[rootX] = rootY;}
-        else if (rank[rootX] > rank[rootY]) {parent[rootY] = rootX;}
-        else {
+        if (rank[rootX] < rank[rootY]) {
+            parent[rootX] = rootY;
+            rootColors[rootY] = rootColors[rootX]; // цвет нового корня = цвет старого
+        } else if (rank[rootX] > rank[rootY]) {
+            parent[rootY] = rootX;
+            rootColors[rootX] = rootColors[rootY];
+        } else {
             parent[rootY] = rootX;
             rank[rootX]++;
+            rootColors[rootX] = rootColors[rootY];
         }
         return true;
+    }
+
+    public Map<Node, Color> getNodeColors(Graph graph) {
+        Map<Node, Color> map = new HashMap<>();
+        for (Node node : graph.getNodes()) {
+            int root = find(node.getId());
+            map.put(node, rootColors[root]);
+        }
+        return map;
     }
 
     // Проверка принадлежности x и y одному множеству
