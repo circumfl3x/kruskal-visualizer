@@ -8,6 +8,7 @@ import com.kruskal.visualisation.GraphRenderer;
 import javafx.scene.Group;
 import javafx.scene.control.TextInputDialog;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -26,8 +27,9 @@ public class GraphEditor {
     private final Group graphGroup;
     private EditMode mode = EditMode.NONE;
     private Runnable onGraphChanged;
-    // Первая выбранная вершина при создании ребра
-    private Node selectedNode;
+    // Выбранные вершины при создании ребра
+    private Node firstSelected;
+    private Node secondSelected;
     // Перетаскиваемая вершина
     private Node draggedNode;
     private double canvasWidth;
@@ -38,7 +40,7 @@ public class GraphEditor {
         this.graph = graph;
         this.renderer = renderer;
         this.graphGroup = graphGroup;
-        this.logger =  logger;
+        this.logger = logger;
     }
 
     /**
@@ -46,7 +48,9 @@ public class GraphEditor {
      */
     public void setMode(EditMode mode) {
         this.mode = mode;
-        this.selectedNode = null;
+        this.firstSelected = null;
+        this.secondSelected = null;
+        refresh();
     }
 
     /**
@@ -96,7 +100,6 @@ public class GraphEditor {
         if (node == null) {
             return;
         }
-
         graph.removeNode(node);
         refresh();
     }
@@ -110,31 +113,62 @@ public class GraphEditor {
             return;
         }
 
-        // Первый клик
-        if (selectedNode == null) {
-            selectedNode = node;
+        // Если уже есть две выбранные вершины — сбрасываем (начинаем заново)
+        if (firstSelected != null && secondSelected != null) {
+            firstSelected = null;
+            secondSelected = null;
+            refresh();
             return;
         }
 
-        // Запрет петли
-        if (selectedNode.equals(node)) {
-            selectedNode = null;
+        // Первая вершина
+        if (firstSelected == null) {
+            firstSelected = node;
+            refresh(List.of(firstSelected));
             return;
+        }
+
+        // Вторая вершина (firstSelected уже есть)
+        // Если кликнули ту же вершину — сбрасываем выбор первой
+        if (firstSelected.equals(node)) {
+            firstSelected = null;
+            refresh();
+            return;
+        }
+
+        // Вторая вершина — другая
+        secondSelected = node;
+        refresh(List.of(firstSelected, secondSelected));
+        // Завершаем создание ребра
+        finishAddEdge();
+    }
+
+    /**
+     * Завершает создание ребра после выбора второй вершины.
+     */
+    private void finishAddEdge() {
+        if (firstSelected == null || secondSelected == null) {
+            return;
+        }
+
+        // Проверка на существование ребра между вершинами
+        for (Edge edge : graph.getEdges()) {
+            if (edge.connects(firstSelected, secondSelected)) {
+                logger.log("Ребро между вершинами " + firstSelected.getId() + " и " + secondSelected.getId() + " уже существует.");
+                firstSelected = null;
+                secondSelected = null;
+                refresh();
+                return;
+            }
         }
 
         int weight = askWeight();
-        Edge edge = new Edge(
-                selectedNode,
-                node,
-                weight
-        );
-
+        Edge edge = new Edge(firstSelected, secondSelected, weight);
         graph.addEdge(edge);
-        logger.log(
-                "Добавлено ребро. Всего ребер: "
-                        + graph.getEdgeCount()
-        );
-        selectedNode = null;
+        logger.log("Добавлено ребро. Всего ребер: " + graph.getEdgeCount());
+
+        firstSelected = null;
+        secondSelected = null;
         refresh();
     }
 
@@ -146,16 +180,12 @@ public class GraphEditor {
         if (edge == null) {
             return;
         }
-
         graph.removeEdge(edge);
         refresh();
     }
 
     /**
      * Изменение веса ребра.
-     *
-     * Так как Edge.weight final,
-     * создается новое ребро вместо старого.
      */
     private void editWeight(double x, double y) {
         Edge oldEdge = findEdge(x, y);
@@ -164,12 +194,7 @@ public class GraphEditor {
         }
 
         int newWeight = askWeight();
-        Edge newEdge = new Edge(
-                oldEdge.getNode1(),
-                oldEdge.getNode2(),
-                newWeight
-        );
-
+        Edge newEdge = new Edge(oldEdge.getNode1(), oldEdge.getNode2(), newWeight);
         graph.removeEdge(oldEdge);
         graph.addEdge(newEdge);
         refresh();
@@ -183,7 +208,6 @@ public class GraphEditor {
             double dx = node.getX() - x;
             double dy = node.getY() - y;
             double distance = Math.sqrt(dx * dx + dy * dy);
-
             if (distance <= GraphRenderer.getNodeRadius()) {
                 return node;
             }
@@ -195,11 +219,9 @@ public class GraphEditor {
      * Поиск ребра рядом с координатой клика.
      */
     private Edge findEdge(double x, double y) {
-        // Если нажали на вершину — это не удаление ребра
         if (findNode(x, y) != null) {
             return null;
         }
-
         for (Edge edge : graph.getEdges()) {
             Node node1 = edge.getNode1();
             Node node2 = edge.getNode2();
@@ -217,35 +239,19 @@ public class GraphEditor {
         if (dx == 0 && dy == 0) {
             return Math.sqrt(Math.pow(px - x1, 2) + Math.pow(py - y1, 2));
         }
-
         double t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy);
-        // ограничиваем точку только отрезком
         t = Math.max(0, Math.min(1, t));
-
         double nearestX = x1 + t * dx;
         double nearestY = y1 + t * dy;
-
         return Math.sqrt(Math.pow(px - nearestX, 2) + Math.pow(py - nearestY, 2));
     }
 
-    /**
-     * Расстояние от точки до линии.
-     */
-    private double distanceToLine(
-            double px,
-            double py,
-            double x1,
-            double y1,
-            double x2,
-            double y2
-    ) {
+    private double distanceToLine(double px, double py, double x1, double y1, double x2, double y2) {
         double numerator = Math.abs((y2 - y1) * px - (x2 - x1) * py + x2 * y1 - y2 * x1);
         double denominator = Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
-
         if (denominator == 0) {
             return Double.MAX_VALUE;
         }
-
         return numerator / denominator;
     }
 
@@ -257,12 +263,10 @@ public class GraphEditor {
             TextInputDialog dialog = new TextInputDialog("1");
             dialog.setTitle("Вес ребра");
             dialog.setHeaderText("Вес ребра должен быть больше нуля");
-
             Optional<String> result = dialog.showAndWait();
             if (result.isEmpty()) {
                 return 1;
             }
-
             try {
                 int weight = Integer.parseInt(result.get());
                 if (weight > 0) {
@@ -275,12 +279,16 @@ public class GraphEditor {
 
     public void setGraph(Graph graph) {
         this.graph = graph;
-        this.selectedNode = null;
+        this.firstSelected = null;
+        this.secondSelected = null;
+        refresh();
     }
 
     public void disableMode() {
         this.mode = EditMode.NONE;
-        this.selectedNode = null;
+        this.firstSelected = null;
+        this.secondSelected = null;
+        refresh();
     }
 
     public EditMode getMode() {
@@ -308,12 +316,9 @@ public class GraphEditor {
         if (draggedNode == null) {
             return;
         }
-
         double radius = GraphRenderer.getNodeRadius();
-        // границы холста
         x = Math.max(radius, Math.min(canvasWidth - radius, x));
         y = Math.max(radius, Math.min(canvasHeight - radius, y));
-
         draggedNode.setX(x);
         draggedNode.setY(y);
         refresh();
@@ -328,13 +333,20 @@ public class GraphEditor {
         this.canvasHeight = height;
     }
 
-    /**
-     * Обновление визуализации.
-     */
     private void refresh() {
-        renderer.renderGraph(graph, graphGroup);
-        if (onGraphChanged != null) {
-            onGraphChanged.run();
-        }
+        renderer.renderGraph(graph, graphGroup, List.of());
+        if (onGraphChanged != null) onGraphChanged.run();
+    }
+
+    private void refresh(List<Node> highlighted) {
+        renderer.renderGraph(graph, graphGroup, highlighted);
+        if (onGraphChanged != null) onGraphChanged.run();
+    }
+
+    /**
+     * Метод для завершения создания ребра извне (не требуется, т.к. finishAddEdge вызывается автоматически).
+     */
+    public void confirmEdgeCreation() {
+        finishAddEdge();
     }
 }

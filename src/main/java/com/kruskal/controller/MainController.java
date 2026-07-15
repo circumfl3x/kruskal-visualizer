@@ -133,9 +133,9 @@ public class MainController {
         graphPane.setOnMouseReleased(event -> {
             editor.handleMouseReleased();
 
-            autoPlayer.reset();
-            steps = null;
-            currentStepIndex = -1;
+//            autoPlayer.reset();
+//            steps = null;
+//            currentStepIndex = -1;
         });
 
         steps = new ArrayList<>();
@@ -219,7 +219,7 @@ public class MainController {
             autoPlayer.reset(); // сброс шагов
             steps = null;
             currentStepIndex = -1;
-            renderer.renderGraph(currentGraph, graphGroup);
+            renderer.renderGraph(currentGraph, graphGroup, List.of());
             mstGroup.getChildren().clear();
             logger.logGraphLoaded(file.getName(), currentGraph.getNodeCount(), currentGraph.getEdgeCount());
         } catch (IOException | NumberFormatException e) {
@@ -255,49 +255,32 @@ public class MainController {
             autoPlayer.reset();
             steps = null;
             currentStepIndex = -1;
-            renderer.renderGraph(currentGraph, graphGroup);
+            renderer.renderGraph(currentGraph, graphGroup, List.of());
             mstGroup.getChildren().clear();
             logger.logGraphGenerated(vertexCount, edgeCount);
         } catch (IllegalArgumentException e) {
             logger.logError("Ошибка генерации: " + e.getMessage());
             showErrorAlert("Ошибка генерации", e.getMessage());
         }
+        unlockControls();
     }
 
     @FXML
     private void onRunKruskalAuto() {
-        editor.disableMode();
+        // УДАЛИТЬ: editor.disableMode();
 
         if (currentGraph == null || currentGraph.isEmpty()) {
             logger.logError("Граф пуст.");
             return;
         }
 
-        // Случай 1: Авто на паузе – обновляем индекс и перезапускаем
-        if (autoPlayer.isPaused()) {
-            // Синхронизируем шаги и индекс из контроллера (пользователь мог изменить вручную)
-            if (steps != null && !steps.isEmpty()) {
-                autoPlayer.setSteps(steps, currentStepIndex);
-            }
-            // Останавливаем авто (сброс состояния паузы)
-            autoPlayer.stop();
-
-            lockControls();
-
-            autoPlayer.togglePlay(() -> {
-                syncStepsFromAuto();
-                unlockControls();
-            });
-            return;
-        }
-
-        // Случай 2: Авто играет (не на паузе) – ставим на паузу
-        if (autoPlayer.isPlaying()) {
+        // Если авто уже запущен или на паузе — переключаем (пауза/возобновление)
+        if (autoPlayer.isPlaying() || autoPlayer.isPaused()) {
             autoPlayer.togglePlay(() -> {});
             return;
         }
 
-        // Случай 3: Авто не запущен – запускаем с текущего индекса (если есть шаги)
+        // Иначе запускаем с текущего индекса (если есть шаги) или вычисляем заново
         if (steps != null && !steps.isEmpty()) {
             autoPlayer.setSteps(steps, currentStepIndex);
         } else {
@@ -336,13 +319,11 @@ public class MainController {
     }
 
     @FXML private void onPrevStep() {
-        editor.disableMode();
         if (autoPlayer.isPlaying() && !autoPlayer.isPaused()) {
             autoPlayer.stop();
             unlockControls();
             logger.log("Автоматическое воспроизведение остановлено.");
         }
-
         if (steps == null || steps.isEmpty()) {
             logger.log("Сначала запустите алгоритм (Run Kruskal Manual).");
             return;
@@ -350,19 +331,21 @@ public class MainController {
         if (currentStepIndex > 0) {
             currentStepIndex--;
             renderStep(currentStepIndex);
+            // Синхронизация авто с новым индексом
+            if (autoPlayer.isPaused() || autoPlayer.isPlaying()) {
+                autoPlayer.setSteps(steps, currentStepIndex);
+            }
         } else {
             logger.log("Это первый шаг.");
         }
     }
 
     @FXML private void onNextStep() {
-        editor.disableMode();
         if (autoPlayer.isPlaying() && !autoPlayer.isPaused()) {
             autoPlayer.stop();
             unlockControls();
             logger.log("Автоматическое воспроизведение остановлено.");
         }
-
         if (steps == null || steps.isEmpty()) {
             logger.log("Сначала запустите алгоритм (Run Kruskal Manual).");
             return;
@@ -370,6 +353,10 @@ public class MainController {
         if (currentStepIndex < steps.size() - 1) {
             currentStepIndex++;
             renderStep(currentStepIndex);
+            // Синхронизация авто с новым индексом
+            if (autoPlayer.isPaused() || autoPlayer.isPlaying()) {
+                autoPlayer.setSteps(steps, currentStepIndex);
+            }
         } else {
             logger.log("Достигнут последний шаг.");
         }
@@ -379,9 +366,9 @@ public class MainController {
         editor.disableMode();
         if (autoPlayer.isPlaying() || autoPlayer.isPaused()) {
             autoPlayer.stop();
-            unlockControls();
             logger.log("Автоматическое воспроизведение остановлено.");
         }
+        unlockControls();
         if (currentGraph != null) {
             currentGraph.clear();
         }

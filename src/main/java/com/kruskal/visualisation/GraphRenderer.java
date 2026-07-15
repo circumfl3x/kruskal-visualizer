@@ -35,16 +35,19 @@ public class GraphRenderer {
     /**
      * Рендер исходного графа в указанную группу.
      */
-    public void renderGraph(Graph graph, Group group) {
+    public void renderGraph(Graph graph, Group group, List<Node> highlightedNodes) {
         group.getChildren().clear();
         if (graph == null || graph.isEmpty()) return;
 
         for (Edge edge : graph.getEdges()) {
             group.getChildren().add(createEdge(edge, EDGE_COLOR, false));
         }
+
         for (Node node : graph.getNodes()) {
-            group.getChildren().add(createNode(node, NODE_COLOR, NODE_STROKE));
+            boolean isHighlighted = highlightedNodes != null && highlightedNodes.contains(node);
+            group.getChildren().add(createNodeWithColor(node, NODE_COLOR, isHighlighted));
         }
+
         for (Edge edge : graph.getEdges()) {
             group.getChildren().add(createEdgeWeight(edge));
         }
