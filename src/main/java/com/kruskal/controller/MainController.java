@@ -113,8 +113,8 @@ public class MainController {
             double radius = 20;
             double maxX = graphPane.getWidth() - radius;
             double maxY = graphPane.getHeight() - radius;
-            x = Math.max(radius, Math.min(x, maxX));
-            y = Math.max(radius, Math.min(y, maxY));
+            x = Math.clamp(x, radius, maxX);
+            y = Math.clamp(y, radius, maxY);
             editor.handleClick(x, y);
         });
 
