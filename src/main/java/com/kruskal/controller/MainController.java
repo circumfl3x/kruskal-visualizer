@@ -3,6 +3,8 @@ package com.kruskal.controller;
 import com.kruskal.algorithm.KruskalAlgorithm;
 import com.kruskal.algorithm.VisualizationStep;
 import com.kruskal.algorithm.AlgorithmStep;
+import com.kruskal.editor.EditMode;
+import com.kruskal.editor.GraphEditor;
 import com.kruskal.io.GraphFileReader;
 import com.kruskal.model.Edge;
 import com.kruskal.model.Graph;
@@ -51,6 +53,7 @@ public class MainController {
     private GraphGenerator generator;
     private GraphFileReader fileReader;
     private GraphFileWriter fileWriter;
+    private GraphEditor editor;
     private List<Edge> lastMSTEdges;
 
     // Для визуализации
@@ -66,7 +69,12 @@ public class MainController {
         fileReader = new GraphFileReader();
         fileWriter = new GraphFileWriter();
         currentGraph = new Graph(new ArrayList<>(), new ArrayList<>());
+        editor = new GraphEditor(currentGraph, renderer, graphGroup);
 
+        graphContainer.setOnMouseClicked(event -> {
+            javafx.geometry.Point2D point = graphGroup.sceneToLocal(event.getSceneX(), event.getSceneY());
+            editor.handleClick(point.getX(), point.getY());
+        });
         steps = new ArrayList<>();
         currentStepIndex = -1;
 
@@ -76,39 +84,39 @@ public class MainController {
 
     }
 
-
     @FXML
     private void onAddNode() {
-        System.out.println("Add Node clicked");
+        switchEditMode(EditMode.ADD_NODE);
         stepsTextArea.appendText("\n[Действие] Добавление вершины");
     }
 
     @FXML
     private void onDeleteNode() {
-        System.out.println("Delete Node clicked");
+        switchEditMode(EditMode.DELETE_NODE);
         stepsTextArea.appendText("\n[Действие] Удаление вершины");
     }
 
     @FXML
     private void onAddEdge() {
-        System.out.println("Add Edge clicked");
+        switchEditMode(EditMode.ADD_EDGE);
         stepsTextArea.appendText("\n[Действие] Добавление ребра");
     }
 
     @FXML
     private void onDeleteEdge() {
-        System.out.println("Delete Edge clicked");
+        switchEditMode(EditMode.DELETE_EDGE);
         stepsTextArea.appendText("\n[Действие] Удаление ребра");
     }
 
     @FXML
     private void onEditWeight() {
-        System.out.println("Edit Weight clicked");
+        switchEditMode(EditMode.EDIT_WEIGHT);
         stepsTextArea.appendText("\n[Действие] Изменение веса ребра");
     }
 
     @FXML
     private void onSaveGraph() {
+        editor.disableMode();
         if (currentGraph == null || currentGraph.isEmpty()) {
             logger.logError("Нет графа для сохранения.");
             showErrorAlert("Ошибка", "Нет графа для сохранения.");
@@ -137,6 +145,7 @@ public class MainController {
 
     @FXML
     private void onInsertGraph() {
+        editor.disableMode();
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Загрузить граф");
         fileChooser.getExtensionFilters().add(
@@ -147,6 +156,7 @@ public class MainController {
         if (file != null) {
             try {
                 currentGraph = fileReader.read(file.getAbsolutePath());
+                editor.setGraph(currentGraph);
                 steps = null;
                 currentStepIndex = -1;
                 renderer.renderGraph(currentGraph, graphGroup);
@@ -164,6 +174,7 @@ public class MainController {
 
     @FXML
     private void onGenerateGraph() {
+        editor.disableMode();
         try {
             Random random = new Random();
             int vertexCount = random.nextInt(3) + 4;
@@ -182,6 +193,7 @@ public class MainController {
             }
 
             currentGraph = generator.generate(vertexCount, edgeCount);
+            editor.setGraph(currentGraph);
             renderer.renderGraph(currentGraph, graphGroup);
             mstGroup.getChildren().clear();
             logger.logGraphGenerated(vertexCount, edgeCount);
@@ -195,6 +207,12 @@ public class MainController {
 
     @FXML
     private void onRunKruskalAuto() {
+        editor.disableMode();
+
+        System.out.println("MODE = " + editor.getMode());
+        System.out.println("NODES = " + currentGraph.getNodeCount());
+        System.out.println("EDGES = " + currentGraph.getEdgeCount());
+
         if (currentGraph == null || currentGraph.isEmpty()) {
             logger.logError("Граф пуст. Загрузите или сгенерируйте граф перед запуском алгоритма.");
             return;
@@ -223,6 +241,7 @@ public class MainController {
 
     @FXML
     private void onRunKruskalManual() {
+        editor.disableMode();
         if (currentGraph == null || currentGraph.isEmpty()) {
             logger.logError("Граф пуст. Загрузите или сгенерируйте граф перед запуском алгоритма.");
             return;
@@ -241,6 +260,7 @@ public class MainController {
 
     @FXML
     private void onPrevStep() {
+        editor.disableMode();
         if (steps == null || steps.isEmpty()) {
             logger.log("Сначала запустите алгоритм (Run Kruskal Manual).");
             return;
@@ -255,6 +275,7 @@ public class MainController {
 
     @FXML
     private void onNextStep() {
+        editor.disableMode();
         if (steps == null || steps.isEmpty()) {
             logger.log("Сначала запустите алгоритм (Run Kruskal Manual).");
             return;
@@ -269,6 +290,7 @@ public class MainController {
 
     @FXML
     private void onClean() {
+        editor.disableMode();
         if (currentGraph != null) {
             currentGraph.clear();
         }
@@ -283,6 +305,16 @@ public class MainController {
     private void onInfo() {
         System.out.println("Info clicked");
         stepsTextArea.appendText("\n[Действие] Информация");
+    }
+
+    private void switchEditMode(EditMode newMode) {
+        if (editor.getMode() == newMode) {
+            editor.disableMode();
+            logger.log("Режим редактирования выключен");
+        } else {
+            editor.setMode(newMode);
+            logger.log("Включен режим: " + newMode);
+        }
     }
 
     // Вспомогательный метод:
