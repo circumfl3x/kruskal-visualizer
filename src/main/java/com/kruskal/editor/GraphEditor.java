@@ -248,20 +248,24 @@ public class GraphEditor {
      * Диалог ввода веса ребра.
      */
     private int askWeight() {
-        TextInputDialog dialog = new TextInputDialog("1");
+        while (true) {
+            TextInputDialog dialog = new TextInputDialog("1");
+            dialog.setTitle("Вес ребра");
+            dialog.setHeaderText("Вес ребра должен быть больше нуля");
 
-        dialog.setTitle("Вес ребра");
-        dialog.setHeaderText("Введите вес ребра");
+            Optional<String> result = dialog.showAndWait();
+            if (result.isEmpty()) {
+                return 1;
+            }
 
-        Optional<String> result = dialog.showAndWait();
-
-        if (result.isPresent()) {
             try {
-                return Integer.parseInt(result.get());
+                int weight = Integer.parseInt(result.get());
+                if (weight > 0) {
+                    return weight;
+                }
             } catch (NumberFormatException ignored) {
             }
         }
-        return 1;
     }
 
     public void setGraph(Graph graph) {
