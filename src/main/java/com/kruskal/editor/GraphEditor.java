@@ -35,6 +35,7 @@ public class GraphEditor {
     private double canvasWidth;
     private double canvasHeight;
     private Logger logger;
+    private Edge editingEdge;
 
     public GraphEditor(Graph graph, GraphRenderer renderer, Group graphGroup, Logger logger) {
         this.graph = graph;
@@ -50,6 +51,7 @@ public class GraphEditor {
         this.mode = mode;
         this.firstSelected = null;
         this.secondSelected = null;
+        this.editingEdge = null;
         refresh();
     }
 
@@ -185,18 +187,23 @@ public class GraphEditor {
     }
 
     /**
-     * Изменение веса ребра.
+     * Изменение веса ребра. Подсветка! редактируемого ребра
      */
     private void editWeight(double x, double y) {
         Edge oldEdge = findEdge(x, y);
-        if (oldEdge == null) {
-            return;
-        }
+        if (oldEdge == null) return;
+
+        // Подсветка ребра
+        editingEdge = oldEdge;
+        refresh(editingEdge);
 
         int newWeight = askWeight();
         Edge newEdge = new Edge(oldEdge.getNode1(), oldEdge.getNode2(), newWeight);
         graph.removeEdge(oldEdge);
         graph.addEdge(newEdge);
+
+        // Сброс подсветки
+        editingEdge = null;
         refresh();
     }
 
@@ -288,6 +295,7 @@ public class GraphEditor {
         this.mode = EditMode.NONE;
         this.firstSelected = null;
         this.secondSelected = null;
+        this.editingEdge = null;
         refresh();
     }
 
@@ -333,15 +341,22 @@ public class GraphEditor {
         this.canvasHeight = height;
     }
 
-    private void refresh() {
-        renderer.renderGraph(graph, graphGroup, List.of());
+    private void refresh(Edge highlightedEdge) {
+        renderer.renderGraph(graph, graphGroup, List.of(), highlightedEdge);
         if (onGraphChanged != null) onGraphChanged.run();
     }
 
-    private void refresh(List<Node> highlighted) {
-        renderer.renderGraph(graph, graphGroup, highlighted);
+    private void refresh() {
+        renderer.renderGraph(graph, graphGroup, List.of(), null);
         if (onGraphChanged != null) onGraphChanged.run();
     }
+
+    private void refresh(List<Node> highlightedNodes) {
+        renderer.renderGraph(graph, graphGroup, highlightedNodes, null);
+        if (onGraphChanged != null) onGraphChanged.run();
+    }
+
+
 
     /**
      * Метод для завершения создания ребра извне (не требуется, т.к. finishAddEdge вызывается автоматически).

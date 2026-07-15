@@ -35,12 +35,15 @@ public class GraphRenderer {
     /**
      * Рендер исходного графа в указанную группу.
      */
-    public void renderGraph(Graph graph, Group group, List<Node> highlightedNodes) {
+    public void renderGraph(Graph graph, Group group, List<Node> highlightedNodes, Edge highlightedEdge) {
         group.getChildren().clear();
         if (graph == null || graph.isEmpty()) return;
 
         for (Edge edge : graph.getEdges()) {
-            group.getChildren().add(createEdge(edge, EDGE_COLOR, false));
+            boolean isHighlighted = edge.equals(highlightedEdge);
+            Color color = isHighlighted ? Color.ORANGE : EDGE_COLOR;
+            double width = isHighlighted ? 4 : 2;
+            group.getChildren().add(createEdgeWithStyle(edge, color, width, false));
         }
 
         for (Node node : graph.getNodes()) {
@@ -51,6 +54,17 @@ public class GraphRenderer {
         for (Edge edge : graph.getEdges()) {
             group.getChildren().add(createEdgeWeight(edge));
         }
+    }
+
+    /**
+     * Чуток перегрузок
+     */
+    public void renderGraph(Graph graph, Group group) {
+        renderGraph(graph, group, List.of(), null);
+    }
+
+    public void renderGraph(Graph graph, Group group, List<Node> highlightedNodes) {
+        renderGraph(graph, group, highlightedNodes, null);
     }
 
     /**
