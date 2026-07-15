@@ -5,6 +5,7 @@ import com.kruskal.model.Graph;
 import com.kruskal.model.Node;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
