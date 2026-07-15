@@ -26,6 +26,7 @@ public class GraphEditor {
     private final GraphRenderer renderer;
     private final Group graphGroup;
     private EditMode mode = EditMode.NONE;
+    private Runnable onGraphChanged;
     // Первая выбранная вершина при создании ребра
     private Node selectedNode;
 
@@ -189,6 +190,11 @@ public class GraphEditor {
      * Поиск ребра рядом с координатой клика.
      */
     private Edge findEdge(double x, double y) {
+        // Если нажали на вершину — это не удаление ребра
+        if (findNode(x, y) != null) {
+            return null;
+        }
+
         for (Edge edge : graph.getEdges()) {
             Node node1 = edge.getNode1();
             Node node2 = edge.getNode2();
@@ -272,6 +278,10 @@ public class GraphEditor {
         return mode;
     }
 
+    public void setOnGraphChanged(Runnable callback) {
+        this.onGraphChanged = callback;
+    }
+
     private boolean isIdExists(int id) {
         for (Node node : graph.getNodes()) {
             if (node.getId() == id) {
@@ -286,5 +296,8 @@ public class GraphEditor {
      */
     private void refresh() {
         renderer.renderGraph(graph, graphGroup);
+        if (onGraphChanged != null) {
+            onGraphChanged.run();
+        }
     }
 }

@@ -71,6 +71,7 @@ public class MainController {
         fileWriter = new GraphFileWriter();
         currentGraph = new Graph(new ArrayList<>(), new ArrayList<>());
         editor = new GraphEditor(currentGraph, renderer, graphGroup);
+        editor.setOnGraphChanged(() -> {autoPlayer.reset();steps = null;currentStepIndex = -1;});
         graphGroup.setMouseTransparent(true);
         mstGroup.setMouseTransparent(true);
 
@@ -229,6 +230,7 @@ public class MainController {
     @FXML
     private void onRunKruskalAuto() {
         editor.disableMode();
+
         if (currentGraph == null || currentGraph.isEmpty()) {
             logger.logError("Граф пуст.");
             return;
