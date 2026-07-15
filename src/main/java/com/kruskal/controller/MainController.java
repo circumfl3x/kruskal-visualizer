@@ -118,10 +118,10 @@ public class MainController {
                 new FileChooser.ExtensionFilter("Текстовые файлы", "*.txt")
         );
         File file = fileChooser.showSaveDialog(graphContainer.getScene().getWindow());
-        if (file == null) return;
-        if (!file.getName().toLowerCase().endsWith(".txt")) {
-            file = new File(file.getAbsolutePath() + ".txt");
+        if (file == null) {
+            return;
         }
+      
         try {
             fileWriter.write(currentGraph, file.getAbsolutePath());
             logger.logGraphSaved(file.getName());
