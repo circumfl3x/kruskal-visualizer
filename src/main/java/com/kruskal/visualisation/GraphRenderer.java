@@ -121,12 +121,23 @@ public class GraphRenderer {
         group.getChildren().clear();
         if (graph == null || graph.isEmpty()) return;
 
+        // 1. Если есть текущее ребро, рисуем его пунктиром
+        Edge currentEdge = step.getCurrentEdge();
+        if (currentEdge != null) {
+            group.getChildren().add(createDashedEdge(currentEdge, Color.GRAY, 1.5));
+        }
+
+        // 2. Рёбра MST (зелёные)
         for (Edge edge : step.getMstEdges()) {
             group.getChildren().add(createEdge(edge, MST_EDGE_COLOR, true));
         }
+
+        // 3. Вершины (с цветами компонент)
         for (Node node : graph.getNodes()) {
             group.getChildren().add(createNodeWithColor(node, step.getColor(node), false));
         }
+
+        // 4. Веса рёбер MST
         for (Edge edge : step.getMstEdges()) {
             group.getChildren().add(createEdgeWeight(edge));
         }
@@ -265,6 +276,30 @@ public class GraphRenderer {
         text.setY(y + th / 4);
 
         return new Group(circle, text);
+    }
+
+    /**
+     * Создаёт пунктирное ребро (для отображения текущего ребра на MST).
+     */
+    private javafx.scene.Node createDashedEdge(Edge edge, Color color, double width) {
+        Node node1 = edge.getNode1();
+        Node node2 = edge.getNode2();
+        double x1 = node1.getX();
+        double y1 = node1.getY();
+        double x2 = node2.getX();
+        double y2 = node2.getY();
+
+        double angle = Math.atan2(y2 - y1, x2 - x1);
+        double startX = x1 + NODE_RADIUS * Math.cos(angle);
+        double startY = y1 + NODE_RADIUS * Math.sin(angle);
+        double endX = x2 - NODE_RADIUS * Math.cos(angle);
+        double endY = y2 - NODE_RADIUS * Math.sin(angle);
+
+        Line line = new Line(startX, startY, endX, endY);
+        line.setStroke(color);
+        line.setStrokeWidth(width);
+        line.getStrokeDashArray().addAll(6.0, 6.0); // пунктир: 6 пикселей черта, 6 пробел
+        return line;
     }
 
     private Color getContrastColor(Color color) {
