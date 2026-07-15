@@ -14,9 +14,9 @@
 
     <VBox spacing="5">
         <HBox alignment="CENTER_LEFT" spacing="10">
-            <Button onAction="#onAddNode" text="Add Node" />
-            <Button onAction="#onAddEdge" text="Add Edge" />
-            <Button onAction="#onEditWeight" text="Edit Weight" />
+            <Button fx:id="addNodeButton" onAction="#onAddNode" text="Add Node" />
+            <Button fx:id="addEdgeButton" onAction="#onAddEdge" text="Add Edge" />
+            <Button fx:id="editWeightButton" onAction="#onEditWeight" text="Edit Weight" />
 
             <Region HBox.hgrow="ALWAYS" />
 
@@ -25,17 +25,17 @@
         </HBox>
 
         <HBox alignment="CENTER_LEFT" spacing="10">
-            <Button onAction="#onDeleteNode" text="Delete Node" />
-            <Button onAction="#onDeleteEdge" text="Delete Edge" />
+            <Button fx:id="deleteNodeButton" onAction="#onDeleteNode" text="Delete Node" />
+            <Button fx:id="deleteEdgeButton" onAction="#onDeleteEdge" text="Delete Edge" />
         </HBox>
     </VBox>
 
     <HBox alignment="CENTER_LEFT" spacing="10">
         <Button onAction="#onGenerateGraph" text="Generate Graph" />
-        <Button onAction="#onRunKruskalAuto" text="Run Kruskal Auto" />
+        <Button fx:id="runKruskalAutoButton" onAction="#onRunKruskalAuto" text="Run Kruskal Auto" />
         <Label text="speed (ms):" />
         <TextField fx:id="speedTextField" prefWidth="80" text="2000" />
-        <Button onAction="#onRunKruskalManual" text="Run Kruskal Manual" />
+        <Button fx:id="runKruskalManualButton" onAction="#onRunKruskalManual" text="Run Kruskal Manual" />
         <Button onAction="#onPrevStep" text="Prev Step" />
         <Button onAction="#onNextStep" text="Next Step" />
         <Button onAction="#onClean" text="Clean" />
