@@ -18,6 +18,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.Pane;
 import javafx.stage.FileChooser;
 
 import java.io.File;
@@ -30,6 +31,7 @@ public class MainController {
 
     @FXML private StackPane graphContainer;
     @FXML private StackPane mstContainer;
+    @FXML private Pane graphPane;
     @FXML private Group graphGroup;
     @FXML private Group mstGroup;
     @FXML private TextArea stepsTextArea;
@@ -69,6 +71,8 @@ public class MainController {
         fileWriter = new GraphFileWriter();
         currentGraph = new Graph(new ArrayList<>(), new ArrayList<>());
         editor = new GraphEditor(currentGraph, renderer, graphGroup);
+        graphGroup.setMouseTransparent(true);
+        mstGroup.setMouseTransparent(true);
 
         // Инициализация AutoPlayer
         autoPlayer = new AutoPlayer(
@@ -85,9 +89,16 @@ public class MainController {
         );
         autoPlayer.setGraph(currentGraph);
 
-        graphContainer.setOnMouseClicked(event -> {
-            javafx.geometry.Point2D point = graphGroup.sceneToLocal(event.getSceneX(), event.getSceneY());
-            editor.handleClick(point.getX(), point.getY());
+        graphPane.setOnMouseClicked(event -> {
+            double x = event.getX();
+            double y = event.getY();
+            double radius = 20;
+            double maxX = graphPane.getWidth() - radius;
+            double maxY = graphPane.getHeight() - radius;
+            // ограничиваем координаты
+            x = Math.max(radius, Math.min(x, maxX));
+            y = Math.max(radius, Math.min(y, maxY));
+            editor.handleClick(x, y);
         });
         steps = new ArrayList<>();
         currentStepIndex = -1;
