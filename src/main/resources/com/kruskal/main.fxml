@@ -32,8 +32,7 @@
 
     <HBox alignment="CENTER_LEFT" spacing="10">
         <Button onAction="#onGenerateGraph" text="Generate Graph" />
-        <Button onAction="#onRunKruskalAuto" text="Run Kruskal Auto" />
-        <Label text="speed (ms):" />
+        <Button fx:id="runKruskalAutoButton" onAction="#onRunKruskalAuto" text="Run Kruskal Auto" />        <Label text="speed (ms):" />
         <TextField fx:id="speedTextField" prefWidth="80" text="2000" />
         <Button onAction="#onRunKruskalManual" text="Run Kruskal Manual" />
         <Button onAction="#onPrevStep" text="Prev Step" />
