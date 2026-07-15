@@ -37,6 +37,7 @@ public class GraphEditor {
     private Logger logger;
     private Edge editingEdge;
 
+
     public GraphEditor(Graph graph, GraphRenderer renderer, Group graphGroup, Logger logger) {
         this.graph = graph;
         this.renderer = renderer;

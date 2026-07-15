@@ -33,7 +33,6 @@ public class AutoPlayer {
     private Runnable onFinish;
     private Runnable onPauseCallback;
 
-
     public AutoPlayer(GraphRenderer renderer, Logger logger,
                       Button autoButton, TextField speedField,
                       Group graphGroup, Group mstGroup,
@@ -68,22 +67,18 @@ public class AutoPlayer {
 
         this.onFinish = onFinish;
 
-        // Если играет – ставим на паузу
         if (isPlaying && !isPaused) {
             pause();
             return;
         }
-        // Если на паузе – возобновляем
         if (isPaused) {
             resume();
             return;
         }
-        // Иначе – запускаем
         start();
     }
 
     private void start() {
-        // Если шагов нет – вычисляем
         if (stepsRef == null || stepsRef.isEmpty()) {
             try {
                 stepsRef = algorithm.executeWithStates(currentGraph);
@@ -94,7 +89,6 @@ public class AutoPlayer {
                 return;
             }
         } else {
-            // Если индекс вышел за границы или на последнем шаге – сбрасываем
             if (currentIndexRef < 0 || currentIndexRef >= stepsRef.size()) {
                 currentIndexRef = 0;
             } else if (currentIndexRef >= stepsRef.size() - 1) {
@@ -102,29 +96,12 @@ public class AutoPlayer {
             }
         }
 
-        int speed = parseSpeed();
         renderStep(currentIndexRef);
-
-        timeline = new Timeline(
-                new KeyFrame(Duration.millis(speed), e -> {
-                    if (currentIndexRef < stepsRef.size() - 1) {
-                        currentIndexRef++;
-                        renderStep(currentIndexRef);
-                    } else {
-                        stop();
-                        if (onFinish != null) onFinish.run();
-                        autoButton.setText("Run Kruskal Auto");
-                        logger.log("Автоматическое воспроизведение завершено.");
-                    }
-                })
-        );
-        timeline.setCycleCount(Timeline.INDEFINITE);
+        createAndPlayTimeline();
         isPlaying = true;
         isPaused = false;
-        timeline.play();
-
         autoButton.setText("Pause");
-        logger.log("Автоматическое воспроизведение начато с шага " + (currentIndexRef + 1));
+        logger.log("Автоматическое воспроизведение начато с шага " + (currentIndexRef + 1) + ", скорость " + parseSpeed() + " мс.");
     }
 
     private void pause() {
@@ -141,11 +118,37 @@ public class AutoPlayer {
 
     private void resume() {
         if (isPaused) {
-            timeline.play();
+            // Останавливаем старый timeline (если есть)
+            if (timeline != null) {
+                timeline.stop();
+                timeline = null;
+            }
+            // Создаём новый с актуальной скоростью
+            createAndPlayTimeline();
             isPaused = false;
+            isPlaying = true;
             autoButton.setText("Pause");
-            logger.log("Автоматическое воспроизведение продолжено.");
+            logger.log("Автоматическое воспроизведение продолжено со скоростью " + parseSpeed() + " мс.");
         }
+    }
+
+    private void createAndPlayTimeline() {
+        int speed = parseSpeed();
+        timeline = new Timeline(
+                new KeyFrame(Duration.millis(speed), e -> {
+                    if (currentIndexRef < stepsRef.size() - 1) {
+                        currentIndexRef++;
+                        renderStep(currentIndexRef);
+                    } else {
+                        stop();
+                        if (onFinish != null) onFinish.run();
+                        autoButton.setText("Run Kruskal Auto");
+                        logger.log("Автоматическое воспроизведение завершено.");
+                    }
+                })
+        );
+        timeline.setCycleCount(Timeline.INDEFINITE);
+        timeline.play();
     }
 
     public void stop() {
@@ -156,7 +159,6 @@ public class AutoPlayer {
         isPlaying = false;
         isPaused = false;
         resetButton();
-        // Не сбрасываем steps и index, чтобы можно было продолжить вручную
     }
 
     public void reset() {
@@ -211,5 +213,4 @@ public class AutoPlayer {
     public int getCurrentIndex() {
         return currentIndexRef;
     }
-
 }

@@ -45,6 +45,9 @@ public class MainController {
     private GraphFileWriter fileWriter;
     private GraphEditor editor;
     private boolean dragged = false;
+    private double mousePressX;
+    private double mousePressY;
+    private boolean dragging;
 
     private AutoPlayer autoPlayer;
     private List<VisualizationStep> steps;       // для ручного режима
@@ -123,19 +126,17 @@ public class MainController {
         });
 
         graphPane.setOnMouseDragged(event -> {
-            editor.handleMouseDragged(
-                    event.getX(),
-                    event.getY()
-            );
-            dragged = true;
+            double dx = event.getX() - mousePressX;
+            double dy = event.getY() - mousePressY;
+            if (Math.sqrt(dx*dx + dy*dy) > 5.0) { // порог 5 пикселей
+                dragging = true;
+                editor.handleMouseDragged(event.getX(), event.getY());
+            }
         });
 
         graphPane.setOnMouseReleased(event -> {
             editor.handleMouseReleased();
 
-//            autoPlayer.reset();
-//            steps = null;
-//            currentStepIndex = -1;
         });
 
         steps = new ArrayList<>();
