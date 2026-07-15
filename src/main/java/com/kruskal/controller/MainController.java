@@ -44,8 +44,17 @@ public class MainController {
     private List<VisualizationStep> steps;       // для ручного режима
     private int currentStepIndex;                // для ручного режима
 
+    @FXML private Button addNodeButton;
+    @FXML private Button addEdgeButton;
+    @FXML private Button editWeightButton;
+    @FXML private Button deleteNodeButton;
+    @FXML private Button deleteEdgeButton;
+    @FXML private Button runKruskalManualButton;
+
     @FXML
     public void initialize() {
+        unlockControls();
+
         renderer = new GraphRenderer();
         logger = new Logger(stepsTextArea);
         algorithm = new KruskalAlgorithm();
@@ -123,6 +132,12 @@ public class MainController {
     }
 
     @FXML private void onInsertGraph() {
+        if (autoPlayer.isPlaying() || autoPlayer.isPaused()) {
+            autoPlayer.stop();
+            unlockControls();
+            logger.log("Автоматическое воспроизведение остановлено.");
+        }
+
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Загрузить граф");
         fileChooser.getExtensionFilters().add(
@@ -146,6 +161,12 @@ public class MainController {
     }
 
     @FXML private void onGenerateGraph() {
+        if (autoPlayer.isPlaying() || autoPlayer.isPaused()) {
+            autoPlayer.stop();
+            unlockControls();
+            logger.log("Автоматическое воспроизведение остановлено.");
+        }
+
         try {
             Random random = new Random();
             int vertexCount = random.nextInt(3) + 4;
@@ -188,8 +209,13 @@ public class MainController {
             }
             // Останавливаем авто (сброс состояния паузы)
             autoPlayer.stop();
-            // Запускаем заново с обновлённым индексом
-            autoPlayer.togglePlay(this::syncStepsFromAuto);
+
+            lockControls();
+
+            autoPlayer.togglePlay(() -> {
+                syncStepsFromAuto();
+                unlockControls();
+            });
             return;
         }
 
@@ -205,12 +231,18 @@ public class MainController {
         } else {
             autoPlayer.setSteps(null, -1);
         }
-        autoPlayer.togglePlay(this::syncStepsFromAuto);
+
+        lockControls();
+        autoPlayer.togglePlay(() -> {
+            syncStepsFromAuto();
+            unlockControls();
+        });
     }
 
     @FXML private void onRunKruskalManual() {
         if (autoPlayer.isPlaying() || autoPlayer.isPaused()) {
             autoPlayer.stop();
+            unlockControls();
             logger.log("Автоматическое воспроизведение остановлено.");
         }
 
@@ -233,6 +265,7 @@ public class MainController {
     @FXML private void onPrevStep() {
         if (autoPlayer.isPlaying() && !autoPlayer.isPaused()) {
             autoPlayer.stop();
+            unlockControls();
             logger.log("Автоматическое воспроизведение остановлено.");
         }
 
@@ -251,6 +284,7 @@ public class MainController {
     @FXML private void onNextStep() {
         if (autoPlayer.isPlaying() && !autoPlayer.isPaused()) {
             autoPlayer.stop();
+            unlockControls();
             logger.log("Автоматическое воспроизведение остановлено.");
         }
 
@@ -269,6 +303,7 @@ public class MainController {
     @FXML private void onClean() {
         if (autoPlayer.isPlaying() || autoPlayer.isPaused()) {
             autoPlayer.stop();
+            unlockControls();
             logger.log("Автоматическое воспроизведение остановлено.");
         }
         if (currentGraph != null) {
@@ -308,5 +343,22 @@ public class MainController {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    private void setButtonsDisabled(boolean disable) {
+        addNodeButton.setDisable(disable);
+        addEdgeButton.setDisable(disable);
+        editWeightButton.setDisable(disable);
+        deleteNodeButton.setDisable(disable);
+        deleteEdgeButton.setDisable(disable);
+        runKruskalManualButton.setDisable(disable);
+    }
+
+    private void lockControls() {
+        setButtonsDisabled(true);
+    }
+
+    private void unlockControls() {
+        setButtonsDisabled(false);
     }
 }
