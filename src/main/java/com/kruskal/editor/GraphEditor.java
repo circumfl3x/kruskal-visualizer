@@ -1,0 +1,290 @@
+package com.kruskal.editor;
+
+import com.kruskal.model.Edge;
+import com.kruskal.model.Graph;
+import com.kruskal.model.Node;
+import com.kruskal.visualisation.GraphRenderer;
+import javafx.scene.Group;
+import javafx.scene.control.TextInputDialog;
+
+import java.util.Optional;
+
+/**
+ * Редактор графа.
+ *
+ * Отвечает за ручное создание и изменение графа пользователем:
+ * - добавление вершин;
+ * - удаление вершин;
+ * - добавление ребер;
+ * - удаление ребер;
+ * - изменение веса ребер.
+ *
+ * Не содержит логику алгоритма Краскала.
+ */
+public class GraphEditor {
+    private Graph graph;
+    private final GraphRenderer renderer;
+    private final Group graphGroup;
+    private EditMode mode = EditMode.NONE;
+    // Первая выбранная вершина при создании ребра
+    private Node selectedNode;
+
+    public GraphEditor(Graph graph, GraphRenderer renderer, Group graphGroup) {
+        this.graph = graph;
+        this.renderer = renderer;
+        this.graphGroup = graphGroup;
+    }
+
+    /**
+     * Устанавливает текущий режим редактирования.
+     */
+    public void setMode(EditMode mode) {
+        this.mode = mode;
+        this.selectedNode = null;
+    }
+
+    /**
+     * Обработка клика мыши по области графа.
+     */
+    public void handleClick(double x, double y) {
+        switch (mode) {
+            case ADD_NODE:
+                addNode(x, y);
+                break;
+            case DELETE_NODE:
+                deleteNode(x, y);
+                break;
+            case ADD_EDGE:
+                addEdge(x, y);
+                break;
+            case DELETE_EDGE:
+                deleteEdge(x, y);
+                break;
+            case EDIT_WEIGHT:
+                editWeight(x, y);
+                break;
+            case NONE:
+            default:
+                break;
+        }
+    }
+
+    /**
+     * Добавление новой вершины.
+     */
+    private void addNode(double x, double y) {
+        int id = 0;
+        while (isIdExists(id)) {
+            id++;
+        }
+        Node node = new Node(id, x, y);
+        graph.addNode(node);
+        refresh();
+    }
+
+    /**
+     * Удаление вершины.
+     */
+    private void deleteNode(double x, double y) {
+        Node node = findNode(x, y);
+        if (node == null) {
+            return;
+        }
+
+        graph.removeNode(node);
+        refresh();
+    }
+
+    /**
+     * Добавление ребра между двумя вершинами.
+     */
+    private void addEdge(double x, double y) {
+        Node node = findNode(x, y);
+        if (node == null) {
+            return;
+        }
+
+        // Первый клик
+        if (selectedNode == null) {
+            selectedNode = node;
+            return;
+        }
+
+        // Запрет петли
+        if (selectedNode.equals(node)) {
+            selectedNode = null;
+            return;
+        }
+
+        int weight = askWeight();
+        Edge edge = new Edge(
+                selectedNode,
+                node,
+                weight
+        );
+
+        graph.addEdge(edge);
+        System.out.println(
+                "Добавлено ребро. Всего ребер: "
+                        + graph.getEdgeCount()
+        );
+        selectedNode = null;
+        refresh();
+    }
+
+    /**
+     * Удаление ребра.
+     */
+    private void deleteEdge(double x, double y) {
+        Edge edge = findEdge(x, y);
+        if (edge == null) {
+            return;
+        }
+
+        graph.removeEdge(edge);
+        refresh();
+    }
+
+    /**
+     * Изменение веса ребра.
+     *
+     * Так как Edge.weight final,
+     * создается новое ребро вместо старого.
+     */
+    private void editWeight(double x, double y) {
+        Edge oldEdge = findEdge(x, y);
+        if (oldEdge == null) {
+            return;
+        }
+
+        int newWeight = askWeight();
+        Edge newEdge = new Edge(
+                oldEdge.getNode1(),
+                oldEdge.getNode2(),
+                newWeight
+        );
+
+        graph.removeEdge(oldEdge);
+        graph.addEdge(newEdge);
+        refresh();
+    }
+
+    /**
+     * Поиск вершины рядом с координатой клика.
+     */
+    private Node findNode(double x, double y) {
+        for (Node node : graph.getNodes()) {
+            double dx = node.getX() - x;
+            double dy = node.getY() - y;
+            double distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance <= GraphRenderer.getNodeRadius()) {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Поиск ребра рядом с координатой клика.
+     */
+    private Edge findEdge(double x, double y) {
+        for (Edge edge : graph.getEdges()) {
+            Node node1 = edge.getNode1();
+            Node node2 = edge.getNode2();
+            double distance = distanceToSegment(x, y, node1.getX(), node1.getY(), node2.getX(), node2.getY());
+            if (distance < 10) {
+                return edge;
+            }
+        }
+        return null;
+    }
+
+    private double distanceToSegment(double px, double py, double x1, double y1, double x2, double y2) {
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+        if (dx == 0 && dy == 0) {
+            return Math.sqrt(Math.pow(px - x1, 2) + Math.pow(py - y1, 2));
+        }
+
+        double t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy);
+        // ограничиваем точку только отрезком
+        t = Math.max(0, Math.min(1, t));
+
+        double nearestX = x1 + t * dx;
+        double nearestY = y1 + t * dy;
+
+        return Math.sqrt(Math.pow(px - nearestX, 2) + Math.pow(py - nearestY, 2));
+    }
+
+    /**
+     * Расстояние от точки до линии.
+     */
+    private double distanceToLine(
+            double px,
+            double py,
+            double x1,
+            double y1,
+            double x2,
+            double y2
+    ) {
+        double numerator = Math.abs((y2 - y1) * px - (x2 - x1) * py + x2 * y1 - y2 * x1);
+        double denominator = Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
+
+        if (denominator == 0) {
+            return Double.MAX_VALUE;
+        }
+
+        return numerator / denominator;
+    }
+
+    /**
+     * Диалог ввода веса ребра.
+     */
+    private int askWeight() {
+        TextInputDialog dialog = new TextInputDialog("1");
+
+        dialog.setTitle("Вес ребра");
+        dialog.setHeaderText("Введите вес ребра");
+
+        Optional<String> result = dialog.showAndWait();
+
+        if (result.isPresent()) {
+            try {
+                return Integer.parseInt(result.get());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return 1;
+    }
+
+    public void setGraph(Graph graph) {
+        this.graph = graph;
+        this.selectedNode = null;
+    }
+
+    public void disableMode() {
+        this.mode = EditMode.NONE;
+        this.selectedNode = null;
+    }
+
+    public EditMode getMode() {
+        return mode;
+    }
+
+    private boolean isIdExists(int id) {
+        for (Node node : graph.getNodes()) {
+            if (node.getId() == id) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Обновление визуализации.
+     */
+    private void refresh() {
+        renderer.renderGraph(graph, graphGroup);
+    }
+}

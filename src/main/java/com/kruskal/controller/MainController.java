@@ -2,9 +2,13 @@ package com.kruskal.controller;
 
 import com.kruskal.algorithm.KruskalAlgorithm;
 import com.kruskal.algorithm.VisualizationStep;
+import com.kruskal.algorithm.AlgorithmStep;
+import com.kruskal.editor.EditMode;
+import com.kruskal.editor.GraphEditor;
 import com.kruskal.io.GraphFileReader;
 import com.kruskal.io.GraphFileWriter;
 import com.kruskal.model.Graph;
+import com.kruskal.model.Edge;
 import com.kruskal.util.GraphGenerator;
 import com.kruskal.util.Logger;
 import com.kruskal.visualisation.GraphRenderer;
@@ -39,6 +43,8 @@ public class MainController {
     private GraphGenerator generator;
     private GraphFileReader fileReader;
     private GraphFileWriter fileWriter;
+    private GraphEditor editor;
+    private List<Edge> lastMSTEdges;
 
     private AutoPlayer autoPlayer;
     private List<VisualizationStep> steps;       // для ручного режима
@@ -62,6 +68,7 @@ public class MainController {
         fileReader = new GraphFileReader();
         fileWriter = new GraphFileWriter();
         currentGraph = new Graph(new ArrayList<>(), new ArrayList<>());
+        editor = new GraphEditor(currentGraph, renderer, graphGroup);
 
         // Инициализация AutoPlayer
         autoPlayer = new AutoPlayer(
@@ -78,6 +85,10 @@ public class MainController {
         );
         autoPlayer.setGraph(currentGraph);
 
+        graphContainer.setOnMouseClicked(event -> {
+            javafx.geometry.Point2D point = graphGroup.sceneToLocal(event.getSceneX(), event.getSceneY());
+            editor.handleClick(point.getX(), point.getY());
+        });
         steps = new ArrayList<>();
         currentStepIndex = -1;
 
@@ -87,26 +98,32 @@ public class MainController {
     }
 
     @FXML private void onAddNode() {
+        switchEditMode(EditMode.ADD_NODE);
         System.out.println("Add Node clicked");
     }
 
     @FXML private void onDeleteNode() {
+        switchEditMode(EditMode.DELETE_NODE);
         System.out.println("Delete Node clicked");
     }
 
     @FXML private void onAddEdge() {
+        switchEditMode(EditMode.ADD_EDGE);
         System.out.println("Add Edge clicked");
     }
 
     @FXML private void onDeleteEdge() {
+        switchEditMode(EditMode.DELETE_EDGE);
         System.out.println("Delete Edge clicked");
     }
 
     @FXML private void onEditWeight() {
+        switchEditMode(EditMode.EDIT_WEIGHT);
         System.out.println("Edit Weight clicked");
     }
 
     @FXML private void onSaveGraph() {
+        editor.disableMode();
         if (currentGraph == null || currentGraph.isEmpty()) {
             logger.logError("Нет графа для сохранения.");
             showErrorAlert("Ошибка", "Нет графа для сохранения.");
@@ -132,6 +149,7 @@ public class MainController {
     }
 
     @FXML private void onInsertGraph() {
+        editor.disableMode();
         if (autoPlayer.isPlaying() || autoPlayer.isPaused()) {
             autoPlayer.stop();
             unlockControls();
@@ -147,6 +165,7 @@ public class MainController {
         if (file == null) return;
         try {
             currentGraph = fileReader.read(file.getAbsolutePath());
+            editor.setGraph(currentGraph);
             autoPlayer.setGraph(currentGraph);
             autoPlayer.reset(); // сброс шагов
             steps = null;
@@ -161,6 +180,7 @@ public class MainController {
     }
 
     @FXML private void onGenerateGraph() {
+        editor.disableMode();
         if (autoPlayer.isPlaying() || autoPlayer.isPaused()) {
             autoPlayer.stop();
             unlockControls();
@@ -181,6 +201,7 @@ public class MainController {
                 edgeCount = random.nextInt(maxAllowedEdges - minEdgesWithExtra + 1) + minEdgesWithExtra;
             }
             currentGraph = generator.generate(vertexCount, edgeCount);
+            editor.setGraph(currentGraph);
             autoPlayer.setGraph(currentGraph);
             autoPlayer.reset();
             steps = null;
@@ -196,6 +217,7 @@ public class MainController {
 
     @FXML
     private void onRunKruskalAuto() {
+        editor.disableMode();
         if (currentGraph == null || currentGraph.isEmpty()) {
             logger.logError("Граф пуст.");
             return;
@@ -240,6 +262,7 @@ public class MainController {
     }
 
     @FXML private void onRunKruskalManual() {
+        editor.disableMode();
         if (autoPlayer.isPlaying() || autoPlayer.isPaused()) {
             autoPlayer.stop();
             unlockControls();
@@ -263,6 +286,7 @@ public class MainController {
     }
 
     @FXML private void onPrevStep() {
+        editor.disableMode();
         if (autoPlayer.isPlaying() && !autoPlayer.isPaused()) {
             autoPlayer.stop();
             unlockControls();
@@ -282,6 +306,7 @@ public class MainController {
     }
 
     @FXML private void onNextStep() {
+        editor.disableMode();
         if (autoPlayer.isPlaying() && !autoPlayer.isPaused()) {
             autoPlayer.stop();
             unlockControls();
@@ -301,6 +326,7 @@ public class MainController {
     }
 
     @FXML private void onClean() {
+        editor.disableMode();
         if (autoPlayer.isPlaying() || autoPlayer.isPaused()) {
             autoPlayer.stop();
             unlockControls();
@@ -319,6 +345,16 @@ public class MainController {
 
     @FXML private void onInfo() {
         System.out.println("Info clicked");
+    }
+
+    private void switchEditMode(EditMode newMode) {
+        if (editor.getMode() == newMode) {
+            editor.disableMode();
+            logger.log("Режим редактирования выключен");
+        } else {
+            editor.setMode(newMode);
+            logger.log("Включен режим: " + newMode);
+        }
     }
 
     private void renderStep(int index) {

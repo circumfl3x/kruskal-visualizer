@@ -19,6 +19,12 @@ public class KruskalAlgorithm {
      * @throws IllegalArgumentException если граф пустой или несвязный
      */
     public List<AlgorithmStep> execute(Graph graph) {
+        Map<Integer, Integer> nodeIndex = new HashMap<>();
+        int index = 0;
+        for (var node : graph.getNodes()) {
+            nodeIndex.put(node.getId(), index++);
+        }
+
         if (graph.isEmpty()) {
             throw new IllegalArgumentException("Граф пуст");
         }
@@ -32,16 +38,16 @@ public class KruskalAlgorithm {
         int totalWeigh = 0;
 
         for (Edge edge : sortedEdges) {
-            int nodeId1 = edge.getNode1().getId();
-            int nodeId2 = edge.getNode2().getId();
+            int nodeId1 = nodeIndex.get(edge.getNode1().getId());
+            int nodeId2 = nodeIndex.get(edge.getNode2().getId());
 
             if (dsu.union(nodeId1, nodeId2)) {
                 totalWeigh += edge.getWeight();
-                String description = "Ребро " + nodeId1 + "-" + nodeId2 + "("
+                String description = "Ребро " + edge.getNode1().getId() + "-" + edge.getNode2().getId() + "("
                         + edge.getWeight() + ") добавлено в остовное дерево. Текущий вес: " + totalWeigh;
                 steps.add(new AlgorithmStep(edge, true, description, totalWeigh));
             } else {
-                String description = "Ребро " + nodeId1 + "-" + nodeId2 + "("
+                String description = "Ребро " + edge.getNode1().getId() + "-" + edge.getNode2().getId() + "("
                         + edge.getWeight() + ") отклонено (образует цикл)";
                 steps.add(new AlgorithmStep(edge, false, description, totalWeigh));
             }
@@ -71,6 +77,12 @@ public class KruskalAlgorithm {
     }
 
     public List<VisualizationStep> executeWithStates(Graph graph) {
+        Map<Integer, Integer> nodeIndex = new HashMap<>();
+        int index = 0;
+        for (var node : graph.getNodes()) {
+            nodeIndex.put(node.getId(), index++);
+        }
+
         if (graph.isEmpty()) {
             throw new IllegalArgumentException("Граф пуст");
         }
@@ -99,8 +111,8 @@ public class KruskalAlgorithm {
 
         // Основной цикл
         for (Edge edge : sortedEdges) {
-            int node1Id = edge.getNode1().getId();
-            int node2Id = edge.getNode2().getId();
+            int node1Id = nodeIndex.get(edge.getNode1().getId());
+            int node2Id = nodeIndex.get(edge.getNode2().getId());
 
             // Получаем корни до объединения
             int root1 = dsu.find(node1Id);
@@ -110,7 +122,7 @@ public class KruskalAlgorithm {
             Map<Edge, EdgeStatus> highlightStatuses = new HashMap<>(statuses);
             highlightStatuses.put(edge, EdgeStatus.CURRENT);
 
-            String highlightDesc = "Рассматривается ребро " + node1Id + " - " + node2Id +
+            String highlightDesc = "Рассматривается ребро " + edge.getNode1().getId() + " - " + edge.getNode2().getId() +
                     " (вес " + edge.getWeight() + "). Корень " + node1Id + ": " + root1 +
                     ", корень " + node2Id + ": " + root2 + ".";
 
@@ -136,7 +148,7 @@ public class KruskalAlgorithm {
                         dsu.getNodeColors(graph),
                         null,
                         totalWeight,
-                        "Ребро " + node1Id + " - " + node2Id +
+                        "Ребро " + edge.getNode1().getId() + " - " + edge.getNode2().getId() +
                                 " добавлено в MST. Текущий вес: " + totalWeight
                 ));
             } else {
@@ -149,7 +161,7 @@ public class KruskalAlgorithm {
                         dsu.getNodeColors(graph),
                         null,
                         totalWeight,
-                        "Ребро " + node1Id + " - " + node2Id +
+                        "Ребро " + edge.getNode1().getId() + " - " + edge.getNode2().getId() +
                                 " отклонено (образует цикл)"
                 ));
             }
