@@ -29,6 +29,10 @@ public class GraphEditor {
     private Runnable onGraphChanged;
     // Первая выбранная вершина при создании ребра
     private Node selectedNode;
+    // Перетаскиваемая вершина
+    private Node draggedNode;
+    private double canvasWidth;
+    private double canvasHeight;
 
     public GraphEditor(Graph graph, GraphRenderer renderer, Group graphGroup) {
         this.graph = graph;
@@ -293,6 +297,34 @@ public class GraphEditor {
             }
         }
         return false;
+    }
+
+    public void handleMousePressed(double x, double y) {
+        draggedNode = findNode(x, y);
+    }
+
+    public void handleMouseDragged(double x, double y) {
+        if (draggedNode == null) {
+            return;
+        }
+
+        double radius = GraphRenderer.getNodeRadius();
+        // границы холста
+        x = Math.max(radius, Math.min(canvasWidth - radius, x));
+        y = Math.max(radius, Math.min(canvasHeight - radius, y));
+
+        draggedNode.setX(x);
+        draggedNode.setY(y);
+        refresh();
+    }
+
+    public void handleMouseReleased() {
+        draggedNode = null;
+    }
+
+    public void setCanvasSize(double width, double height) {
+        this.canvasWidth = width;
+        this.canvasHeight = height;
     }
 
     /**

@@ -47,6 +47,7 @@ public class MainController {
     private GraphFileWriter fileWriter;
     private GraphEditor editor;
     private List<Edge> lastMSTEdges;
+    private boolean dragged = false;
 
     private AutoPlayer autoPlayer;
     private List<VisualizationStep> steps;       // для ручного режима
@@ -71,6 +72,18 @@ public class MainController {
         fileWriter = new GraphFileWriter();
         currentGraph = new Graph(new ArrayList<>(), new ArrayList<>());
         editor = new GraphEditor(currentGraph, renderer, graphGroup);
+        graphPane.widthProperty().addListener((obs, oldValue, newValue) -> {
+            editor.setCanvasSize(
+                    newValue.doubleValue(),
+                    graphPane.getHeight()
+            );
+        });
+        graphPane.heightProperty().addListener((obs, oldValue, newValue) -> {
+            editor.setCanvasSize(
+                    graphPane.getWidth(),
+                    newValue.doubleValue()
+            );
+        });
         editor.setOnGraphChanged(() -> {autoPlayer.reset();steps = null;currentStepIndex = -1;});
         graphGroup.setMouseTransparent(true);
         mstGroup.setMouseTransparent(true);
@@ -91,16 +104,43 @@ public class MainController {
         autoPlayer.setGraph(currentGraph);
 
         graphPane.setOnMouseClicked(event -> {
+            if (dragged) {
+                dragged = false;
+                return;
+            }
             double x = event.getX();
             double y = event.getY();
             double radius = 20;
             double maxX = graphPane.getWidth() - radius;
             double maxY = graphPane.getHeight() - radius;
-            // ограничиваем координаты
             x = Math.max(radius, Math.min(x, maxX));
             y = Math.max(radius, Math.min(y, maxY));
             editor.handleClick(x, y);
         });
+
+        graphPane.setOnMousePressed(event -> {
+            editor.handleMousePressed(
+                    event.getX(),
+                    event.getY()
+            );
+        });
+
+        graphPane.setOnMouseDragged(event -> {
+            editor.handleMouseDragged(
+                    event.getX(),
+                    event.getY()
+            );
+            dragged = true;
+        });
+
+        graphPane.setOnMouseReleased(event -> {
+            editor.handleMouseReleased();
+
+            autoPlayer.reset();
+            steps = null;
+            currentStepIndex = -1;
+        });
+
         steps = new ArrayList<>();
         currentStepIndex = -1;
 
@@ -368,6 +408,13 @@ public class MainController {
             editor.setMode(newMode);
             logger.log("Включен режим: " + newMode);
         }
+    }
+
+    private double clamp(double value, double min, double max) {
+        if (max < min) {
+            return min;
+        }
+        return Math.max(min, Math.min(value, max));
     }
 
     private void renderStep(int index) {
