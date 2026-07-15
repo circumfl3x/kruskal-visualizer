@@ -2,13 +2,11 @@ package com.kruskal.controller;
 
 import com.kruskal.algorithm.KruskalAlgorithm;
 import com.kruskal.algorithm.VisualizationStep;
-import com.kruskal.algorithm.AlgorithmStep;
 import com.kruskal.editor.EditMode;
 import com.kruskal.editor.GraphEditor;
 import com.kruskal.io.GraphFileReader;
 import com.kruskal.io.GraphFileWriter;
 import com.kruskal.model.Graph;
-import com.kruskal.model.Edge;
 import com.kruskal.util.GraphGenerator;
 import com.kruskal.util.Logger;
 import com.kruskal.visualisation.GraphRenderer;
@@ -46,12 +44,11 @@ public class MainController {
     private GraphFileReader fileReader;
     private GraphFileWriter fileWriter;
     private GraphEditor editor;
-    private List<Edge> lastMSTEdges;
     private boolean dragged = false;
 
     private AutoPlayer autoPlayer;
     private List<VisualizationStep> steps;       // для ручного режима
-    private int currentStepIndex;                // для ручного режима
+    private int currentStepIndex;
 
     @FXML private Button addNodeButton;
     @FXML private Button addEdgeButton;
@@ -71,7 +68,7 @@ public class MainController {
         fileReader = new GraphFileReader();
         fileWriter = new GraphFileWriter();
         currentGraph = new Graph(new ArrayList<>(), new ArrayList<>());
-        editor = new GraphEditor(currentGraph, renderer, graphGroup);
+        editor = new GraphEditor(currentGraph, renderer, graphGroup, logger);
         graphPane.widthProperty().addListener((obs, oldValue, newValue) -> {
             editor.setCanvasSize(
                     newValue.doubleValue(),

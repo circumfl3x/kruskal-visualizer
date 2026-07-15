@@ -3,6 +3,7 @@ package com.kruskal.editor;
 import com.kruskal.model.Edge;
 import com.kruskal.model.Graph;
 import com.kruskal.model.Node;
+import com.kruskal.util.Logger;
 import com.kruskal.visualisation.GraphRenderer;
 import javafx.scene.Group;
 import javafx.scene.control.TextInputDialog;
@@ -18,8 +19,6 @@ import java.util.Optional;
  * - добавление ребер;
  * - удаление ребер;
  * - изменение веса ребер.
- *
- * Не содержит логику алгоритма Краскала.
  */
 public class GraphEditor {
     private Graph graph;
@@ -33,11 +32,13 @@ public class GraphEditor {
     private Node draggedNode;
     private double canvasWidth;
     private double canvasHeight;
+    private Logger logger;
 
-    public GraphEditor(Graph graph, GraphRenderer renderer, Group graphGroup) {
+    public GraphEditor(Graph graph, GraphRenderer renderer, Group graphGroup, Logger logger) {
         this.graph = graph;
         this.renderer = renderer;
         this.graphGroup = graphGroup;
+        this.logger =  logger;
     }
 
     /**
@@ -129,7 +130,7 @@ public class GraphEditor {
         );
 
         graph.addEdge(edge);
-        System.out.println(
+        logger.log(
                 "Добавлено ребро. Всего ребер: "
                         + graph.getEdgeCount()
         );
