@@ -44,16 +44,15 @@ public class GraphManager {
         this.fileReader = new GraphFileReader();
         this.fileWriter = new GraphFileWriter();
 
-        // Подписываемся на изменения редактора
         editor.setOnGraphChanged(() -> {
-            renderGraph();  // обновляем отображение
-            if (autoPlayer != null) autoPlayer.setGraph(editor.getGraph()); // обновляем авто-плеер
-            if (onGraphChanged != null) onGraphChanged.run(); // уведомляем внешний колбэк (сброс шагов)
+            renderGraph();
+            if (autoPlayer != null) autoPlayer.setGraph(editor.getGraph());
+            if (onGraphChanged != null) onGraphChanged.run();
         });
     }
 
     public Graph getCurrentGraph() {
-        return editor.getGraph();  // всегда из редактора
+        return editor.getGraph();
     }
 
     public void setCurrentGraph(Graph graph) {

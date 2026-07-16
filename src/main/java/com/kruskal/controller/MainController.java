@@ -53,12 +53,7 @@ public class MainController {
         Graph graph = new Graph(new ArrayList<>(), new ArrayList<>());
         GraphEditor editor = new GraphEditor(graph, renderer, graphGroup, logger);
 
-        graphManager = new GraphManager(renderer, editor, null, logger, graphGroup, mstGroup);
-        graphManager.setOnGraphChanged(() -> {
-            if (playbackCoordinator != null) playbackCoordinator.reset();
-        });
-
-        // Создаём AutoPlayer
+        // Создаём AutoPlayer ДО GraphManager
         autoPlayer = new AutoPlayer(
                 renderer, logger, runKruskalAutoButton, speedTextField,
                 graphGroup, mstGroup, algorithm,
@@ -70,10 +65,11 @@ public class MainController {
         );
         autoPlayer.setOnComplete(uiStateManager::unlockControls);
 
-        // Создаём PlaybackCoordinator с autoPlayer
+        // GraphManager получает autoPlayer
+        graphManager = new GraphManager(renderer, editor, autoPlayer, logger, graphGroup, mstGroup);
+        graphManager.setOnGraphChanged(this::onGraphChanged);
+        // PlaybackCoordinator получает autoPlayer
         playbackCoordinator = new PlaybackCoordinator(algorithm, renderer, logger, graphManager, autoPlayer, graphGroup, mstGroup);
-
-        graphManager.setAutoPlayer(autoPlayer);
 
         graphPane.widthProperty().addListener((obs, old, val) ->
                 graphManager.setCanvasSize(val.doubleValue(), graphPane.getHeight()));
@@ -219,6 +215,10 @@ public class MainController {
 
     @FXML private void onInfo() {
         InfoDialog.show();
+    }
+
+    private void onGraphChanged() {
+        if (playbackCoordinator != null) playbackCoordinator.reset();
     }
 
     private void showErrorAlert(String title, String message) {
