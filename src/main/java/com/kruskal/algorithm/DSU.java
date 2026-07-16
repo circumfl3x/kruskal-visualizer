@@ -74,9 +74,11 @@ public class DSU {
 
     public Map<Node, Color> getNodeColors(Graph graph) {
         Map<Node, Color> map = new HashMap<>();
+        int index = 0;
         for (Node node : graph.getNodes()) {
-            int root = find(node.getId());
+            int root = find(index);
             map.put(node, rootColors[root]);
+            index++;
         }
         return map;
     }

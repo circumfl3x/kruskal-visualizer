@@ -2,6 +2,8 @@ package com.kruskal.controller;
 
 import com.kruskal.algorithm.KruskalAlgorithm;
 import com.kruskal.algorithm.VisualizationStep;
+import com.kruskal.editor.EditMode;
+import com.kruskal.editor.GraphEditor;
 import com.kruskal.io.GraphFileReader;
 import com.kruskal.io.GraphFileWriter;
 import com.kruskal.model.Graph;
@@ -14,6 +16,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.Pane;
 import javafx.stage.FileChooser;
 
 import java.io.File;
@@ -26,6 +29,7 @@ public class MainController {
 
     @FXML private StackPane graphContainer;
     @FXML private StackPane mstContainer;
+    @FXML private Pane graphPane;
     @FXML private Group graphGroup;
     @FXML private Group mstGroup;
     @FXML private TextArea stepsTextArea;
@@ -39,10 +43,15 @@ public class MainController {
     private GraphGenerator generator;
     private GraphFileReader fileReader;
     private GraphFileWriter fileWriter;
+    private GraphEditor editor;
+    private boolean dragged = false;
+    private double mousePressX;
+    private double mousePressY;
+    private boolean dragging;
 
     private AutoPlayer autoPlayer;
     private List<VisualizationStep> steps;       // для ручного режима
-    private int currentStepIndex;                // для ручного режима
+    private int currentStepIndex;
 
     @FXML private Button addNodeButton;
     @FXML private Button addEdgeButton;
@@ -62,6 +71,22 @@ public class MainController {
         fileReader = new GraphFileReader();
         fileWriter = new GraphFileWriter();
         currentGraph = new Graph(new ArrayList<>(), new ArrayList<>());
+        editor = new GraphEditor(currentGraph, renderer, graphGroup, logger);
+        graphPane.widthProperty().addListener((obs, oldValue, newValue) -> {
+            editor.setCanvasSize(
+                    newValue.doubleValue(),
+                    graphPane.getHeight()
+            );
+        });
+        graphPane.heightProperty().addListener((obs, oldValue, newValue) -> {
+            editor.setCanvasSize(
+                    graphPane.getWidth(),
+                    newValue.doubleValue()
+            );
+        });
+        editor.setOnGraphChanged(() -> {autoPlayer.reset();steps = null;currentStepIndex = -1;});
+        graphGroup.setMouseTransparent(true);
+        mstGroup.setMouseTransparent(true);
 
         // Инициализация AutoPlayer
         autoPlayer = new AutoPlayer(
@@ -78,6 +103,42 @@ public class MainController {
         );
         autoPlayer.setGraph(currentGraph);
 
+        graphPane.setOnMouseClicked(event -> {
+            if (dragged) {
+                dragged = false;
+                return;
+            }
+            double x = event.getX();
+            double y = event.getY();
+            double radius = 20;
+            double maxX = graphPane.getWidth() - radius;
+            double maxY = graphPane.getHeight() - radius;
+            x = Math.clamp(x, radius, maxX);
+            y = Math.clamp(y, radius, maxY);
+            editor.handleClick(x, y);
+        });
+
+        graphPane.setOnMousePressed(event -> {
+            editor.handleMousePressed(
+                    event.getX(),
+                    event.getY()
+            );
+        });
+
+        graphPane.setOnMouseDragged(event -> {
+            double dx = event.getX() - mousePressX;
+            double dy = event.getY() - mousePressY;
+            if (Math.sqrt(dx*dx + dy*dy) > 5.0) { // порог 5 пикселей
+                dragging = true;
+                editor.handleMouseDragged(event.getX(), event.getY());
+            }
+        });
+
+        graphPane.setOnMouseReleased(event -> {
+            editor.handleMouseReleased();
+
+        });
+
         steps = new ArrayList<>();
         currentStepIndex = -1;
 
@@ -87,26 +148,32 @@ public class MainController {
     }
 
     @FXML private void onAddNode() {
+        switchEditMode(EditMode.ADD_NODE);
         System.out.println("Add Node clicked");
     }
 
     @FXML private void onDeleteNode() {
+        switchEditMode(EditMode.DELETE_NODE);
         System.out.println("Delete Node clicked");
     }
 
     @FXML private void onAddEdge() {
+        switchEditMode(EditMode.ADD_EDGE);
         System.out.println("Add Edge clicked");
     }
 
     @FXML private void onDeleteEdge() {
+        switchEditMode(EditMode.DELETE_EDGE);
         System.out.println("Delete Edge clicked");
     }
 
     @FXML private void onEditWeight() {
+        switchEditMode(EditMode.EDIT_WEIGHT);
         System.out.println("Edit Weight clicked");
     }
 
     @FXML private void onSaveGraph() {
+        editor.disableMode();
         if (currentGraph == null || currentGraph.isEmpty()) {
             logger.logError("Нет графа для сохранения.");
             showErrorAlert("Ошибка", "Нет графа для сохранения.");
@@ -132,6 +199,7 @@ public class MainController {
     }
 
     @FXML private void onInsertGraph() {
+        editor.disableMode();
         if (autoPlayer.isPlaying() || autoPlayer.isPaused()) {
             autoPlayer.stop();
             unlockControls();
@@ -147,11 +215,12 @@ public class MainController {
         if (file == null) return;
         try {
             currentGraph = fileReader.read(file.getAbsolutePath());
+            editor.setGraph(currentGraph);
             autoPlayer.setGraph(currentGraph);
             autoPlayer.reset(); // сброс шагов
             steps = null;
             currentStepIndex = -1;
-            renderer.renderGraph(currentGraph, graphGroup);
+            renderer.renderGraph(currentGraph, graphGroup, List.of());
             mstGroup.getChildren().clear();
             logger.logGraphLoaded(file.getName(), currentGraph.getNodeCount(), currentGraph.getEdgeCount());
         } catch (IOException | NumberFormatException e) {
@@ -161,6 +230,7 @@ public class MainController {
     }
 
     @FXML private void onGenerateGraph() {
+        editor.disableMode();
         if (autoPlayer.isPlaying() || autoPlayer.isPaused()) {
             autoPlayer.stop();
             unlockControls();
@@ -181,51 +251,37 @@ public class MainController {
                 edgeCount = random.nextInt(maxAllowedEdges - minEdgesWithExtra + 1) + minEdgesWithExtra;
             }
             currentGraph = generator.generate(vertexCount, edgeCount);
+            editor.setGraph(currentGraph);
             autoPlayer.setGraph(currentGraph);
             autoPlayer.reset();
             steps = null;
             currentStepIndex = -1;
-            renderer.renderGraph(currentGraph, graphGroup);
+            renderer.renderGraph(currentGraph, graphGroup, List.of());
             mstGroup.getChildren().clear();
             logger.logGraphGenerated(vertexCount, edgeCount);
         } catch (IllegalArgumentException e) {
             logger.logError("Ошибка генерации: " + e.getMessage());
             showErrorAlert("Ошибка генерации", e.getMessage());
         }
+        unlockControls();
     }
 
     @FXML
     private void onRunKruskalAuto() {
+        // УДАЛИТЬ: editor.disableMode();
+
         if (currentGraph == null || currentGraph.isEmpty()) {
             logger.logError("Граф пуст.");
             return;
         }
 
-        // Случай 1: Авто на паузе – обновляем индекс и перезапускаем
-        if (autoPlayer.isPaused()) {
-            // Синхронизируем шаги и индекс из контроллера (пользователь мог изменить вручную)
-            if (steps != null && !steps.isEmpty()) {
-                autoPlayer.setSteps(steps, currentStepIndex);
-            }
-            // Останавливаем авто (сброс состояния паузы)
-            autoPlayer.stop();
-
-            lockControls();
-
-            autoPlayer.togglePlay(() -> {
-                syncStepsFromAuto();
-                unlockControls();
-            });
-            return;
-        }
-
-        // Случай 2: Авто играет (не на паузе) – ставим на паузу
-        if (autoPlayer.isPlaying()) {
+        // Если авто уже запущен или на паузе — переключаем (пауза/возобновление)
+        if (autoPlayer.isPlaying() || autoPlayer.isPaused()) {
             autoPlayer.togglePlay(() -> {});
             return;
         }
 
-        // Случай 3: Авто не запущен – запускаем с текущего индекса (если есть шаги)
+        // Иначе запускаем с текущего индекса (если есть шаги) или вычисляем заново
         if (steps != null && !steps.isEmpty()) {
             autoPlayer.setSteps(steps, currentStepIndex);
         } else {
@@ -240,6 +296,7 @@ public class MainController {
     }
 
     @FXML private void onRunKruskalManual() {
+        editor.disableMode();
         if (autoPlayer.isPlaying() || autoPlayer.isPaused()) {
             autoPlayer.stop();
             unlockControls();
@@ -268,7 +325,6 @@ public class MainController {
             unlockControls();
             logger.log("Автоматическое воспроизведение остановлено.");
         }
-
         if (steps == null || steps.isEmpty()) {
             logger.log("Сначала запустите алгоритм (Run Kruskal Manual).");
             return;
@@ -276,6 +332,10 @@ public class MainController {
         if (currentStepIndex > 0) {
             currentStepIndex--;
             renderStep(currentStepIndex);
+            // Синхронизация авто с новым индексом
+            if (autoPlayer.isPaused() || autoPlayer.isPlaying()) {
+                autoPlayer.setSteps(steps, currentStepIndex);
+            }
         } else {
             logger.log("Это первый шаг.");
         }
@@ -287,7 +347,6 @@ public class MainController {
             unlockControls();
             logger.log("Автоматическое воспроизведение остановлено.");
         }
-
         if (steps == null || steps.isEmpty()) {
             logger.log("Сначала запустите алгоритм (Run Kruskal Manual).");
             return;
@@ -295,17 +354,22 @@ public class MainController {
         if (currentStepIndex < steps.size() - 1) {
             currentStepIndex++;
             renderStep(currentStepIndex);
+            // Синхронизация авто с новым индексом
+            if (autoPlayer.isPaused() || autoPlayer.isPlaying()) {
+                autoPlayer.setSteps(steps, currentStepIndex);
+            }
         } else {
             logger.log("Достигнут последний шаг.");
         }
     }
 
     @FXML private void onClean() {
+        editor.disableMode();
         if (autoPlayer.isPlaying() || autoPlayer.isPaused()) {
             autoPlayer.stop();
-            unlockControls();
             logger.log("Автоматическое воспроизведение остановлено.");
         }
+        unlockControls();
         if (currentGraph != null) {
             currentGraph.clear();
         }
@@ -319,6 +383,23 @@ public class MainController {
 
     @FXML private void onInfo() {
         System.out.println("Info clicked");
+    }
+
+    private void switchEditMode(EditMode newMode) {
+        if (editor.getMode() == newMode) {
+            editor.disableMode();
+            logger.log("Режим редактирования выключен");
+        } else {
+            editor.setMode(newMode);
+            logger.log("Включен режим: " + newMode);
+        }
+    }
+
+    private double clamp(double value, double min, double max) {
+        if (max < min) {
+            return min;
+        }
+        return Math.max(min, Math.min(value, max));
     }
 
     private void renderStep(int index) {
