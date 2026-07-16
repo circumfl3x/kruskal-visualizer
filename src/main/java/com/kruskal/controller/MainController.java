@@ -5,6 +5,7 @@ import com.kruskal.editor.EditMode;
 import com.kruskal.editor.GraphEditor;
 import com.kruskal.model.Graph;
 import com.kruskal.util.GenerateGraphDialog;
+import com.kruskal.util.InfoDialog;
 import com.kruskal.util.Logger;
 import com.kruskal.visualisation.GraphRenderer;
 import javafx.fxml.FXML;
@@ -217,7 +218,7 @@ public class MainController {
     }
 
     @FXML private void onInfo() {
-        System.out.println("Info clicked");
+        InfoDialog.show();
     }
 
     private void showErrorAlert(String title, String message) {
