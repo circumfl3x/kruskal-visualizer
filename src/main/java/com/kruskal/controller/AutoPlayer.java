@@ -170,7 +170,6 @@ public class AutoPlayer {
         // Вызываем callback завершения, если он установлен
         if (onComplete != null) {
             onComplete.run();
-            onComplete = null;
         }
     }
 

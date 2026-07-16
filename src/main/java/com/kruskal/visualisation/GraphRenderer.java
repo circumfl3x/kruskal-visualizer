@@ -40,22 +40,21 @@ public class GraphRenderer {
         if (graph == null || graph.isEmpty()) return;
 
         for (Edge edge : graph.getEdges()) {
-            boolean isHighlighted = edge.equals(highlightedEdge);
-            Color color = isHighlighted ? Color.ORANGE : EDGE_COLOR;
-            double width = isHighlighted ? 4 : 2;
+            boolean highlight = edge.equals(highlightedEdge);
+            Color color = highlight ? Color.ORANGE : EDGE_COLOR;
+            double width = highlight ? 4 : 2;
             group.getChildren().add(createEdgeWithStyle(edge, color, width, false));
         }
 
         for (Node node : graph.getNodes()) {
-            boolean isHighlighted = highlightedNodes != null && highlightedNodes.contains(node);
-            group.getChildren().add(createNodeWithColor(node, NODE_COLOR, isHighlighted));
+            boolean highlight = highlightedNodes != null && highlightedNodes.contains(node);
+            group.getChildren().add(createNodeWithColor(node, NODE_COLOR, highlight));
         }
 
         for (Edge edge : graph.getEdges()) {
             group.getChildren().add(createEdgeWeight(edge));
         }
     }
-
     /**
      * Чуток перегрузок
      */

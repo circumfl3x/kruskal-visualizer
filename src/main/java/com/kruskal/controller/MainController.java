@@ -22,10 +22,6 @@ import java.util.ArrayList;
 
 /**
  * Главный контроллер приложения, связывающий FXML-разметку с логикой.
- *
- * Инициализирует все компоненты (менеджеры, координатор, обработчики),
- * обрабатывает действия кнопок и делегирует их соответствующим классам.
- *
  */
 public class MainController {
 
@@ -53,40 +49,37 @@ public class MainController {
         uiStateManager = new UIStateManager(addNodeButton, addEdgeButton, editWeightButton,
                 deleteNodeButton, deleteEdgeButton, runKruskalManualButton);
 
-        // 1. GraphManager (пока без autoPlayer)
-        GraphEditor editor = new GraphEditor(new Graph(new ArrayList<>(), new ArrayList<>()), renderer, graphGroup, logger);
+        Graph graph = new Graph(new ArrayList<>(), new ArrayList<>());
+        GraphEditor editor = new GraphEditor(graph, renderer, graphGroup, logger);
+
         graphManager = new GraphManager(renderer, editor, null, logger, graphGroup, mstGroup);
         graphManager.setOnGraphChanged(() -> {
             if (playbackCoordinator != null) playbackCoordinator.reset();
         });
 
-        // 2. PlaybackCoordinator (пока без autoPlayer)
-        playbackCoordinator = new PlaybackCoordinator(algorithm, renderer, logger, graphManager, null, graphGroup, mstGroup);
-
-        // 3. AutoPlayer с колбэком, синхронизирующим playbackCoordinator
+        // Создаём AutoPlayer
         autoPlayer = new AutoPlayer(
                 renderer, logger, runKruskalAutoButton, speedTextField,
                 graphGroup, mstGroup, algorithm,
                 () -> {
                     if (autoPlayer.getSteps() != null && !autoPlayer.getSteps().isEmpty()) {
-                        playbackCoordinator.syncFromAuto();
                         logger.log("Состояние алгоритма синхронизировано для ручного управления.");
                     }
                 }
         );
         autoPlayer.setOnComplete(uiStateManager::unlockControls);
 
-        // 4. Устанавливаем autoPlayer в менеджеры
+        // Создаём PlaybackCoordinator с autoPlayer
+        playbackCoordinator = new PlaybackCoordinator(algorithm, renderer, logger, graphManager, autoPlayer, graphGroup, mstGroup);
+
         graphManager.setAutoPlayer(autoPlayer);
-        playbackCoordinator.setAutoPlayer(autoPlayer);
 
         graphPane.widthProperty().addListener((obs, old, val) ->
                 graphManager.setCanvasSize(val.doubleValue(), graphPane.getHeight()));
         graphPane.heightProperty().addListener((obs, old, val) ->
                 graphManager.setCanvasSize(graphPane.getWidth(), val.doubleValue()));
 
-        // Обработчики мыши
-        GraphInteractionHandler interactionHandler = new GraphInteractionHandler(graphManager, graphPane);
+        new GraphInteractionHandler(graphManager, graphPane);
 
         graphGroup.setMouseTransparent(true);
         mstGroup.setMouseTransparent(true);

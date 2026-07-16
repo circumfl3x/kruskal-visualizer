@@ -7,28 +7,16 @@ import com.kruskal.util.Logger;
 import com.kruskal.visualisation.GraphRenderer;
 import javafx.scene.Group;
 
-import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Координирует пошаговое и автоматическое воспроизведение алгоритма.
- *
- * Хранит список шагов и текущий индекс, управляет ручным переключением
- * (Prev/Next), запуском пошагового режима и синхронизацией с
- * {@link AutoPlayer} при паузе/возобновлении.
- *
- */
 public class PlaybackCoordinator {
     private final KruskalAlgorithm algorithm;
     private final GraphRenderer renderer;
     private final Logger logger;
     private final GraphManager graphManager;
-    private AutoPlayer autoPlayer;
+    private final AutoPlayer autoPlayer;
     private final Group graphGroup;
     private final Group mstGroup;
-
-    private List<VisualizationStep> steps;
-    private int currentStepIndex;
 
     public PlaybackCoordinator(KruskalAlgorithm algorithm, GraphRenderer renderer, Logger logger,
                                GraphManager graphManager, AutoPlayer autoPlayer,
@@ -40,13 +28,9 @@ public class PlaybackCoordinator {
         this.autoPlayer = autoPlayer;
         this.graphGroup = graphGroup;
         this.mstGroup = mstGroup;
-        this.steps = new ArrayList<>();
-        this.currentStepIndex = -1;
     }
 
     public void reset() {
-        steps = null;
-        currentStepIndex = -1;
         autoPlayer.reset();
     }
 
@@ -57,10 +41,10 @@ public class PlaybackCoordinator {
             return;
         }
         try {
-            steps = algorithm.executeWithStates(graph);
+            List<VisualizationStep> steps = algorithm.executeWithStates(graph);
             logger.logSortedEdges(graph.getEdges().stream().sorted().toList());
-            currentStepIndex = 0;
-            renderStep(currentStepIndex);
+            autoPlayer.setSteps(steps, 0);
+            renderStep(0);
             logger.log("Пошаговый режим запущен. Используйте Prev/Next.");
         } catch (IllegalArgumentException e) {
             logger.logError(e.getMessage());
@@ -73,17 +57,21 @@ public class PlaybackCoordinator {
             logger.logError("Граф пуст.");
             return;
         }
-        logger.logSortedEdges(graph.getEdges().stream().sorted().toList());
+
+        // Если авто уже активен (играет или на паузе) – просто переключаем
         if (autoPlayer.isPlaying() || autoPlayer.isPaused()) {
             autoPlayer.togglePlay(() -> {});
             return;
         }
-        if (steps != null && !steps.isEmpty()) {
-            autoPlayer.setSteps(steps, currentStepIndex);
-        } else {
-            autoPlayer.setSteps(null, -1);
+
+        // Если шагов нет – вычисляем и записываем в авто-плеер
+        if (autoPlayer.getSteps() == null || autoPlayer.getSteps().isEmpty()) {
+            List<VisualizationStep> steps = algorithm.executeWithStates(graph);
+            autoPlayer.setSteps(steps, 0);
         }
-        autoPlayer.togglePlay(this::syncFromAuto);
+
+        logger.logSortedEdges(graph.getEdges().stream().sorted().toList());
+        autoPlayer.togglePlay(() -> {});
     }
 
     public void nextStep() {
@@ -91,16 +79,18 @@ public class PlaybackCoordinator {
             autoPlayer.stop();
             logger.log("Автоматическое воспроизведение остановлено.");
         }
+
+        List<VisualizationStep> steps = autoPlayer.getSteps();
         if (steps == null || steps.isEmpty()) {
             logger.log("Сначала запустите алгоритм.");
             return;
         }
-        if (currentStepIndex < steps.size() - 1) {
-            currentStepIndex++;
-            renderStep(currentStepIndex);
-            if (autoPlayer.isPaused() || autoPlayer.isPlaying()) {
-                autoPlayer.setSteps(steps, currentStepIndex);
-            }
+
+        int index = autoPlayer.getCurrentIndex();
+        if (index < steps.size() - 1) {
+            index++;
+            autoPlayer.setSteps(steps, index);
+            renderStep(index);
         } else {
             logger.log("Достигнут последний шаг.");
         }
@@ -111,37 +101,32 @@ public class PlaybackCoordinator {
             autoPlayer.stop();
             logger.log("Автоматическое воспроизведение остановлено.");
         }
+
+        List<VisualizationStep> steps = autoPlayer.getSteps();
         if (steps == null || steps.isEmpty()) {
             logger.log("Сначала запустите алгоритм.");
             return;
         }
-        if (currentStepIndex > 0) {
-            currentStepIndex--;
-            renderStep(currentStepIndex);
-            if (autoPlayer.isPaused() || autoPlayer.isPlaying()) {
-                autoPlayer.setSteps(steps, currentStepIndex);
-            }
+
+        int index = autoPlayer.getCurrentIndex();
+        if (index > 0) {
+            index--;
+            autoPlayer.setSteps(steps, index);
+            renderStep(index);
         } else {
             logger.log("Это первый шаг.");
         }
     }
 
     private void renderStep(int index) {
-        VisualizationStep step = steps.get(index);
+        VisualizationStep step = autoPlayer.getSteps().get(index);
         Graph graph = graphManager.getCurrentGraph();
         renderer.renderStep(graph, step, graphGroup);
         renderer.renderMSTStep(graph, step, mstGroup);
         logger.log(step.getDescription());
     }
 
-    public void syncFromAuto() {
-        if (autoPlayer.getSteps() != null && !autoPlayer.getSteps().isEmpty()) {
-            steps = autoPlayer.getSteps();
-            currentStepIndex = autoPlayer.getCurrentIndex();
-        }
-    }
-
     public void setAutoPlayer(AutoPlayer autoPlayer) {
-        this.autoPlayer = autoPlayer;
+        // Здесь ничего не делаем, т.к. autoPlayer передаётся в конструкторе
     }
 }

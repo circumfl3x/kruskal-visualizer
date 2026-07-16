@@ -4,7 +4,9 @@ import com.kruskal.editor.EditMode;
 import com.kruskal.editor.GraphEditor;
 import com.kruskal.io.GraphFileReader;
 import com.kruskal.io.GraphFileWriter;
+import com.kruskal.model.Edge;
 import com.kruskal.model.Graph;
+import com.kruskal.model.Node;
 import com.kruskal.util.GraphGenerator;
 import com.kruskal.util.Logger;
 import com.kruskal.visualisation.GraphRenderer;
@@ -12,20 +14,13 @@ import javafx.scene.Group;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 /**
  * Центральный менеджер для управления графом и его состоянием.
- *
- * Объединяет операции с графом: генерация, загрузка из файла,
- * сохранение, очистка, рендеринг, а также управление редактором
- * и авто-плеером. Синхронизирует изменения с визуализацией.
- *
  */
 public class GraphManager {
-    private Graph currentGraph;
     private final GraphRenderer renderer;
     private final GraphEditor editor;
     private AutoPlayer autoPlayer;
@@ -48,21 +43,22 @@ public class GraphManager {
         this.generator = new GraphGenerator();
         this.fileReader = new GraphFileReader();
         this.fileWriter = new GraphFileWriter();
-        this.currentGraph = new Graph(new ArrayList<>(), new ArrayList<>());
-    }
 
-    public void setOnGraphChanged(Runnable onGraphChanged) {
-        this.onGraphChanged = onGraphChanged;
+        // Подписываемся на изменения редактора
+        editor.setOnGraphChanged(() -> {
+            renderGraph();  // обновляем отображение
+            if (autoPlayer != null) autoPlayer.setGraph(editor.getGraph()); // обновляем авто-плеер
+            if (onGraphChanged != null) onGraphChanged.run(); // уведомляем внешний колбэк (сброс шагов)
+        });
     }
 
     public Graph getCurrentGraph() {
-        return currentGraph;
+        return editor.getGraph();  // всегда из редактора
     }
 
     public void setCurrentGraph(Graph graph) {
-        this.currentGraph = graph;
         editor.setGraph(graph);
-        autoPlayer.setGraph(graph);
+        if (autoPlayer != null) autoPlayer.setGraph(graph);
         if (onGraphChanged != null) onGraphChanged.run();
         renderGraph();
     }
@@ -102,27 +98,36 @@ public class GraphManager {
     }
 
     public void saveGraph(File file) throws IOException {
-        if (currentGraph == null || currentGraph.isEmpty()) {
+        Graph graph = getCurrentGraph();
+        if (graph == null || graph.isEmpty()) {
             throw new IOException("Нет графа для сохранения.");
         }
-        fileWriter.write(currentGraph, file.getAbsolutePath());
+        fileWriter.write(graph, file.getAbsolutePath());
         logger.logGraphSaved(file.getName());
     }
 
     public void clear() {
-        if (currentGraph != null) {
-            currentGraph.clear();
+        Graph graph = getCurrentGraph();
+        if (graph != null) {
+            graph.clear();
         }
         graphGroup.getChildren().clear();
         mstGroup.getChildren().clear();
         logger.clear();
         editor.disableMode();
-        autoPlayer.reset();
+        if (autoPlayer != null) autoPlayer.reset();
         if (onGraphChanged != null) onGraphChanged.run();
     }
 
+    public void setOnGraphChanged(Runnable onGraphChanged) {
+        this.onGraphChanged = onGraphChanged;
+    }
+
     public void renderGraph() {
-        renderer.renderGraph(currentGraph, graphGroup, List.of());
+        Graph graph = getCurrentGraph();
+        List<Node> highlightedNodes = editor.getHighlightedNodes();
+        Edge highlightedEdge = editor.getHighlightedEdge();
+        renderer.renderGraph(graph, graphGroup, highlightedNodes, highlightedEdge);
     }
 
     public void setAutoPlayer(AutoPlayer autoPlayer) {
