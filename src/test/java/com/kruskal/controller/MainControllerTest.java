@@ -1,99 +1,87 @@
 package com.kruskal.controller;
 
-import com.kruskal.model.Graph;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
 class MainControllerTest {
-    private MainController controller;
 
-    @BeforeEach
-    void setUp() throws Exception {
-        controller = new MainController();
-        setField(
-                "currentGraph",
-                new Graph(
-                        new ArrayList<>(),
-                        new ArrayList<>()
-                )
-        );
-        setField(
-                "steps",
-                new ArrayList<>()
-        );
-        setField(
-                "currentStepIndex",
-                -1
-        );
-    }
-
-    private void setField(
-            String name,
-            Object value
-    ) throws Exception {
-        Field field =
-                MainController.class
-                        .getDeclaredField(name);
+    private Object getField(Object object, String fieldName) throws Exception {
+        Field field = object.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
-        field.set(controller,value);
+        return field.get(object);
     }
 
-    private Object getField(
-            String name
-    ) throws Exception {
-        Field field =
-                MainController.class
-                        .getDeclaredField(name);
-        field.setAccessible(true);
-        return field.get(controller);
-    }
 
     @Test
-    void controllerShouldBeCreated(){
+    void controllerShouldBeCreated() {
+        MainController controller = new MainController();
 
         assertNotNull(controller);
-
     }
 
+
     @Test
-    void emptyGraphShouldBeCreated(){
+    void fieldsShouldBeNullBeforeInitialize() throws Exception {
+        MainController controller = new MainController();
+
+        assertNull(
+                getField(controller, "graphManager")
+        );
+
+        assertNull(
+                getField(controller, "logger")
+        );
+
+        assertNull(
+                getField(controller, "autoPlayer")
+        );
+
+        assertNull(
+                getField(controller, "uiStateManager")
+        );
+
+        assertNull(
+                getField(controller, "playbackCoordinator")
+        );
+    }
+
+
+    @Test
+    void controllerShouldHaveRequiredFields() {
+
         assertDoesNotThrow(() -> {
-            Graph graph =
-                    (Graph)getField(
-                            "currentGraph"
-                    );
-            assertNotNull(graph);
+
+            MainController.class.getDeclaredField("graphManager");
+            MainController.class.getDeclaredField("logger");
+            MainController.class.getDeclaredField("autoPlayer");
+            MainController.class.getDeclaredField("uiStateManager");
+            MainController.class.getDeclaredField("playbackCoordinator");
+
         });
+
     }
 
-    @Test
-    void initialStepsShouldBeEmpty()
-            throws Exception {
-        ArrayList<?> steps =
-                (ArrayList<?>)getField(
-                        "steps"
-                );
-        assertTrue(
-                steps.isEmpty()
-        );
-    }
 
     @Test
-    void initialStepIndexShouldBeMinusOne()
-            throws Exception {
-        int index =
-                (int)getField(
-                        "currentStepIndex"
-                );
-        assertEquals(
-                -1,
-                index
+    void controllerShouldNotContainOldFields() {
+
+        assertThrows(
+                NoSuchFieldException.class,
+                () -> MainController.class.getDeclaredField("currentGraph")
         );
+
+        assertThrows(
+                NoSuchFieldException.class,
+                () -> MainController.class.getDeclaredField("steps")
+        );
+
+        assertThrows(
+                NoSuchFieldException.class,
+                () -> MainController.class.getDeclaredField("currentStepIndex")
+        );
+
     }
 }

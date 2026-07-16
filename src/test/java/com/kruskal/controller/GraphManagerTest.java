@@ -11,6 +11,7 @@ import javafx.scene.Group;
 import javafx.scene.control.TextArea;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import com.kruskal.util.JavaFXTestUtil;
 
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -29,9 +30,7 @@ class GraphManagerTest {
                 new CountDownLatch(1);
 
 
-        Platform.startup(
-                latch::countDown
-        );
+        JavaFXTestUtil.init();
 
 
         latch.await(

@@ -11,6 +11,7 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.scene.text.Text;
 import org.junit.jupiter.api.*;
+import com.kruskal.util.JavaFXTestUtil;
 
 import java.util.*;
 
@@ -24,7 +25,7 @@ public class GraphRendererTest {
 
     @BeforeAll
     static void initJavaFX() {
-        Platform.startup(() -> {});
+        JavaFXTestUtil.init();
     }
 
 

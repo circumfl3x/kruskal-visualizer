@@ -6,6 +6,7 @@ import javafx.application.Platform;
 import javafx.scene.control.TextArea;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import com.kruskal.util.JavaFXTestUtil;
 
 import java.util.List;
 
@@ -15,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class LoggerTest {
     @BeforeAll
     static void initJavaFX() {
-        Platform.startup(() -> {});
+        JavaFXTestUtil.init();
     }
     private Logger createLogger(TextArea area) {
         return new Logger(area);
