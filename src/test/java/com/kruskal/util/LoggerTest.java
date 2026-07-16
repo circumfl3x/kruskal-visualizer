@@ -6,6 +6,7 @@ import javafx.application.Platform;
 import javafx.scene.control.TextArea;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import com.kruskal.util.JavaFXTestUtil;
 
 import java.util.List;
 
@@ -13,29 +14,18 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 class LoggerTest {
-
-
     @BeforeAll
     static void initJavaFX() {
-        Platform.startup(() -> {});
+        JavaFXTestUtil.init();
     }
-
-
     private Logger createLogger(TextArea area) {
         return new Logger(area);
     }
-
-
-
     private Edge createEdge(int id1, int id2, int weight) {
-
         Node n1 =
                 new Node(id1, 100, 100);
-
         Node n2 =
                 new Node(id2, 200, 200);
-
-
         return new Edge(
                 n1,
                 n2,
@@ -43,53 +33,32 @@ class LoggerTest {
         );
     }
 
-
-
     @Test
     void testLogAddsMessage() {
-
         TextArea area =
                 new TextArea();
-
         Logger logger =
                 createLogger(area);
-
-
         logger.log("Тестовое сообщение");
-
-
         assertTrue(
                 area.getText()
                         .contains("Тестовое сообщение")
         );
     }
 
-
-
     @Test
     void testClearSetsWelcomeMessage() {
-
         TextArea area =
                 new TextArea();
-
-
         area.setText("старый текст");
-
-
         Logger logger =
                 createLogger(area);
-
-
         logger.clear();
-
-
         assertEquals(
                 "Добро пожаловать! Загрузите граф или создайте его вручную.\n",
                 area.getText()
         );
     }
-
-
 
     @Test
     void testLogSortedEdges() {

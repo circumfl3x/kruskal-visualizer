@@ -13,6 +13,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import com.kruskal.util.JavaFXTestUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +26,7 @@ class AutoPlayerTest {
 
     @BeforeAll
     static void initJavaFX() {
-        Platform.startup(() -> {});
+        JavaFXTestUtil.init();
     }
 
 
