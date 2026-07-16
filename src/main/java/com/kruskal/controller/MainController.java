@@ -7,6 +7,7 @@ import com.kruskal.editor.GraphEditor;
 import com.kruskal.io.GraphFileReader;
 import com.kruskal.io.GraphFileWriter;
 import com.kruskal.model.Graph;
+import com.kruskal.util.GenerateGraphDialog;
 import com.kruskal.util.GraphGenerator;
 import com.kruskal.util.Logger;
 import com.kruskal.visualisation.GraphRenderer;
@@ -264,6 +265,36 @@ public class MainController {
             showErrorAlert("Ошибка генерации", e.getMessage());
         }
         unlockControls();
+    }
+
+    @FXML private void onGenerateGraphParams() {
+        int[] params = GenerateGraphDialog.showAndWait();
+        if (params != null) {
+            generateWithParams(params[0], params[1]);
+        }
+    }
+
+    private void generateWithParams(int vertexCount, int edgeCount) {
+        editor.disableMode();
+        if (autoPlayer.isPlaying() || autoPlayer.isPaused()) {
+            autoPlayer.stop();
+            unlockControls();
+            logger.log("Автоматическое воспроизведение остановлено.");
+        }
+        try {
+            currentGraph = generator.generate(vertexCount, edgeCount);
+            editor.setGraph(currentGraph);
+            autoPlayer.setGraph(currentGraph);
+            autoPlayer.reset();
+            steps = null;
+            currentStepIndex = -1;
+            renderer.renderGraph(currentGraph, graphGroup, List.of());
+            mstGroup.getChildren().clear();
+            logger.logGraphGenerated(vertexCount, edgeCount);
+        } catch (IllegalArgumentException e) {
+            logger.logError("Ошибка генерации: " + e.getMessage());
+            showErrorAlert("Ошибка генерации", e.getMessage());
+        }
     }
 
     @FXML
