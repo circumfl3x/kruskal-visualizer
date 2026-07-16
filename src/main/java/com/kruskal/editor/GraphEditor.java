@@ -34,9 +34,9 @@ public class GraphEditor {
     private Node draggedNode;
     private double canvasWidth;
     private double canvasHeight;
-    private Logger logger;
-    private Edge editingEdge;
-
+    private final Logger logger;
+    private List<Node> highlightedNodes = List.of();
+    private Edge highlightedEdge = null;
 
     public GraphEditor(Graph graph, GraphRenderer renderer, Group graphGroup, Logger logger) {
         this.graph = graph;
@@ -52,7 +52,8 @@ public class GraphEditor {
         this.mode = mode;
         this.firstSelected = null;
         this.secondSelected = null;
-        this.editingEdge = null;
+        this.highlightedNodes = List.of();
+        this.highlightedEdge = null;
         refresh();
     }
 
@@ -61,24 +62,12 @@ public class GraphEditor {
      */
     public void handleClick(double x, double y) {
         switch (mode) {
-            case ADD_NODE:
-                addNode(x, y);
-                break;
-            case DELETE_NODE:
-                deleteNode(x, y);
-                break;
-            case ADD_EDGE:
-                addEdge(x, y);
-                break;
-            case DELETE_EDGE:
-                deleteEdge(x, y);
-                break;
-            case EDIT_WEIGHT:
-                editWeight(x, y);
-                break;
-            case NONE:
-            default:
-                break;
+            case ADD_NODE -> addNode(x, y);
+            case DELETE_NODE -> deleteNode(x, y);
+            case ADD_EDGE -> addEdge(x, y);
+            case DELETE_EDGE -> deleteEdge(x, y);
+            case EDIT_WEIGHT -> editWeight(x, y);
+            default -> {}
         }
     }
 
@@ -90,8 +79,7 @@ public class GraphEditor {
         while (isIdExists(id)) {
             id++;
         }
-        Node node = new Node(id, x, y);
-        graph.addNode(node);
+        graph.addNode(new Node(id, x, y));
         refresh();
     }
 
@@ -100,9 +88,7 @@ public class GraphEditor {
      */
     private void deleteNode(double x, double y) {
         Node node = findNode(x, y);
-        if (node == null) {
-            return;
-        }
+        if (node == null) return;
         graph.removeNode(node);
         refresh();
     }
@@ -112,14 +98,13 @@ public class GraphEditor {
      */
     private void addEdge(double x, double y) {
         Node node = findNode(x, y);
-        if (node == null) {
-            return;
-        }
+        if (node == null) return;
 
         // Если уже есть две выбранные вершины — сбрасываем (начинаем заново)
         if (firstSelected != null && secondSelected != null) {
             firstSelected = null;
             secondSelected = null;
+            highlightedNodes = List.of();
             refresh();
             return;
         }
@@ -127,22 +112,24 @@ public class GraphEditor {
         // Первая вершина
         if (firstSelected == null) {
             firstSelected = node;
-            refresh(List.of(firstSelected));
+            highlightedNodes = List.of(firstSelected);
+            refresh();
             return;
         }
 
-        // Вторая вершина (firstSelected уже есть)
         // Если кликнули ту же вершину — сбрасываем выбор первой
         if (firstSelected.equals(node)) {
             firstSelected = null;
+            secondSelected = null;
+            highlightedNodes = List.of();
             refresh();
             return;
         }
 
         // Вторая вершина — другая
         secondSelected = node;
-        refresh(List.of(firstSelected, secondSelected));
-        // Завершаем создание ребра
+        highlightedNodes = List.of(firstSelected, secondSelected);
+        refresh();
         finishAddEdge();
     }
 
@@ -160,6 +147,7 @@ public class GraphEditor {
                 logger.log("Ребро между вершинами " + firstSelected.getId() + " и " + secondSelected.getId() + " уже существует.");
                 firstSelected = null;
                 secondSelected = null;
+                highlightedNodes = List.of();
                 refresh();
                 return;
             }
@@ -172,6 +160,7 @@ public class GraphEditor {
 
         firstSelected = null;
         secondSelected = null;
+        highlightedNodes = List.of();
         refresh();
     }
 
@@ -180,23 +169,21 @@ public class GraphEditor {
      */
     private void deleteEdge(double x, double y) {
         Edge edge = findEdge(x, y);
-        if (edge == null) {
-            return;
-        }
+        if (edge == null) return;
         graph.removeEdge(edge);
         refresh();
     }
 
     /**
-     * Изменение веса ребра. Подсветка! редактируемого ребра
+     * Изменение веса ребра. Подсветка редактируемого ребра.
      */
     private void editWeight(double x, double y) {
         Edge oldEdge = findEdge(x, y);
         if (oldEdge == null) return;
 
         // Подсветка ребра
-        editingEdge = oldEdge;
-        refresh(editingEdge);
+        highlightedEdge = oldEdge;
+        refresh();
 
         int newWeight = askWeight();
         Edge newEdge = new Edge(oldEdge.getNode1(), oldEdge.getNode2(), newWeight);
@@ -204,7 +191,7 @@ public class GraphEditor {
         graph.addEdge(newEdge);
 
         // Сброс подсветки
-        editingEdge = null;
+        highlightedEdge = null;
         refresh();
     }
 
@@ -215,8 +202,7 @@ public class GraphEditor {
         for (Node node : graph.getNodes()) {
             double dx = node.getX() - x;
             double dy = node.getY() - y;
-            double distance = Math.sqrt(dx * dx + dy * dy);
-            if (distance <= GraphRenderer.getNodeRadius()) {
+            if (Math.sqrt(dx*dx + dy*dy) <= GraphRenderer.getNodeRadius()) {
                 return node;
             }
         }
@@ -227,16 +213,12 @@ public class GraphEditor {
      * Поиск ребра рядом с координатой клика.
      */
     private Edge findEdge(double x, double y) {
-        if (findNode(x, y) != null) {
-            return null;
-        }
+        if (findNode(x, y) != null) return null;
         for (Edge edge : graph.getEdges()) {
-            Node node1 = edge.getNode1();
-            Node node2 = edge.getNode2();
-            double distance = distanceToSegment(x, y, node1.getX(), node1.getY(), node2.getX(), node2.getY());
-            if (distance < 10) {
-                return edge;
-            }
+            double d = distanceToSegment(x, y,
+                    edge.getNode1().getX(), edge.getNode1().getY(),
+                    edge.getNode2().getX(), edge.getNode2().getY());
+            if (d < 10) return edge;
         }
         return null;
     }
@@ -245,22 +227,13 @@ public class GraphEditor {
         double dx = x2 - x1;
         double dy = y2 - y1;
         if (dx == 0 && dy == 0) {
-            return Math.sqrt(Math.pow(px - x1, 2) + Math.pow(py - y1, 2));
+            return Math.hypot(px - x1, py - y1);
         }
-        double t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy);
-        t = Math.max(0, Math.min(1, t));
-        double nearestX = x1 + t * dx;
-        double nearestY = y1 + t * dy;
-        return Math.sqrt(Math.pow(px - nearestX, 2) + Math.pow(py - nearestY, 2));
-    }
-
-    private double distanceToLine(double px, double py, double x1, double y1, double x2, double y2) {
-        double numerator = Math.abs((y2 - y1) * px - (x2 - x1) * py + x2 * y1 - y2 * x1);
-        double denominator = Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
-        if (denominator == 0) {
-            return Double.MAX_VALUE;
-        }
-        return numerator / denominator;
+        double t = ((px - x1) * dx + (py - y1) * dy) / (dx*dx + dy*dy);
+        t = Math.clamp(t, 0, 1);
+        double nearX = x1 + t * dx;
+        double nearY = y1 + t * dy;
+        return Math.hypot(px - nearX, py - nearY);
     }
 
     /**
@@ -270,18 +243,13 @@ public class GraphEditor {
         while (true) {
             TextInputDialog dialog = new TextInputDialog("1");
             dialog.setTitle("Вес ребра");
-            dialog.setHeaderText("Вес ребра должен быть больше нуля");
+            dialog.setHeaderText("Вес ребра > 0");
             Optional<String> result = dialog.showAndWait();
-            if (result.isEmpty()) {
-                return 1;
-            }
+            if (result.isEmpty()) return 1;
             try {
-                int weight = Integer.parseInt(result.get());
-                if (weight > 0) {
-                    return weight;
-                }
-            } catch (NumberFormatException ignored) {
-            }
+                int w = Integer.parseInt(result.get());
+                if (w > 0) return w;
+            } catch (NumberFormatException ignored) {}
         }
     }
 
@@ -289,6 +257,8 @@ public class GraphEditor {
         this.graph = graph;
         this.firstSelected = null;
         this.secondSelected = null;
+        this.highlightedNodes = List.of();
+        this.highlightedEdge = null;
         refresh();
     }
 
@@ -296,7 +266,8 @@ public class GraphEditor {
         this.mode = EditMode.NONE;
         this.firstSelected = null;
         this.secondSelected = null;
-        this.editingEdge = null;
+        this.highlightedNodes = List.of();
+        this.highlightedEdge = null;
         refresh();
     }
 
@@ -310,9 +281,7 @@ public class GraphEditor {
 
     private boolean isIdExists(int id) {
         for (Node node : graph.getNodes()) {
-            if (node.getId() == id) {
-                return true;
-            }
+            if (node.getId() == id) return true;
         }
         return false;
     }
@@ -322,12 +291,10 @@ public class GraphEditor {
     }
 
     public void handleMouseDragged(double x, double y) {
-        if (draggedNode == null) {
-            return;
-        }
+        if (draggedNode == null) return;
         double radius = GraphRenderer.getNodeRadius();
-        x = Math.max(radius, Math.min(canvasWidth - radius, x));
-        y = Math.max(radius, Math.min(canvasHeight - radius, y));
+        x = Math.clamp(x, radius, canvasWidth - radius);
+        y = Math.clamp(y, radius, canvasHeight - radius);
         draggedNode.setX(x);
         draggedNode.setY(y);
         refresh();
@@ -342,27 +309,19 @@ public class GraphEditor {
         this.canvasHeight = height;
     }
 
-    private void refresh(Edge highlightedEdge) {
-        renderer.renderGraph(graph, graphGroup, List.of(), highlightedEdge);
-        if (onGraphChanged != null) onGraphChanged.run();
-    }
-
     private void refresh() {
-        renderer.renderGraph(graph, graphGroup, List.of(), null);
         if (onGraphChanged != null) onGraphChanged.run();
     }
 
-    private void refresh(List<Node> highlightedNodes) {
-        renderer.renderGraph(graph, graphGroup, highlightedNodes, null);
-        if (onGraphChanged != null) onGraphChanged.run();
+    public Graph getGraph() {
+        return graph;
     }
 
+    public List<Node> getHighlightedNodes() {
+        return highlightedNodes;
+    }
 
-
-    /**
-     * Метод для завершения создания ребра извне (не требуется, т.к. finishAddEdge вызывается автоматически).
-     */
-    public void confirmEdgeCreation() {
-        finishAddEdge();
+    public Edge getHighlightedEdge() {
+        return highlightedEdge;
     }
 }

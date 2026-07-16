@@ -31,9 +31,17 @@ public class AutoPlayer {
     private boolean isPlaying;
     private boolean isPaused;
     private Runnable onFinish;
-    private Runnable onPauseCallback;
+    private final Runnable onPauseCallback;
     private Runnable onComplete; // новый callback для завершения
 
+    /**
+     * Управляет автоматическим воспроизведением шагов алгоритма Краскала.
+     *
+     * Создаёт таймер с заданной скоростью, последовательно переключает шаги
+     * и обновляет визуализацию. Поддерживает паузу и возобновление,
+     * а также изменение скорости во время воспроизведения.
+     *
+     */
     public AutoPlayer(GraphRenderer renderer, Logger logger,
                       Button autoButton, TextField speedField,
                       Group graphGroup, Group mstGroup,
@@ -162,7 +170,6 @@ public class AutoPlayer {
         // Вызываем callback завершения, если он установлен
         if (onComplete != null) {
             onComplete.run();
-            onComplete = null;
         }
     }
 
