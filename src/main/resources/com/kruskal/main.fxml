@@ -50,7 +50,7 @@
     <HBox alignment="CENTER_LEFT" spacing="10">
         <Button onAction="#onGenerateGraph"
                 text="Generate Graph"/>
-        <Button onAction="#onGenerateGraphParams" text="Generate Graph&#10; (With Params)"/>
+        <Button onAction="#onGenerateGraphParams" text="Generate Graph (With Params)"/>
         <Button fx:id="runKruskalAutoButton"
                 onAction="#onRunKruskalAuto"
                 text="Run Kruskal Auto"/>
