@@ -1,136 +1,361 @@
 package com.kruskal.io;
 
-import com.kruskal.model.Edge;
-import com.kruskal.model.Graph;
-import com.kruskal.model.Node;
-import org.junit.jupiter.api.Test;
 
+import com.kruskal.model.Graph;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+
 class GraphFileReaderTest {
 
-    // Проверка успешного чтения графа из файла
-    @Test
-    void shouldReadGraphFromFile() throws IOException {
 
-        Path file = Files.createTempFile("graph", ".txt");
+    @TempDir
+    Path tempDir;
 
-        Files.writeString(file, """
-                3
-                0 100 100
-                1 200 200
-                2 300 300
-                0 1 5
-                1 2 10
-                """);
 
-        GraphFileReader reader = new GraphFileReader();
 
-        Graph graph = reader.read(file.toString());
+    private File createFile(String content) throws IOException {
 
-        assertEquals(3, graph.getNodeCount());
-        assertEquals(2, graph.getEdgeCount());
+        Path file =
+                tempDir.resolve("graph.txt");
+
+        Files.writeString(
+                file,
+                content
+        );
+
+        return file.toFile();
     }
 
-    // Проверка чтения координат вершины
+
+
     @Test
-    void shouldReadNodeCoordinates() throws IOException {
+    void readGraphWithoutCoordinatesShouldCreateGraph()
+            throws Exception {
 
-        Path file = Files.createTempFile("graph", ".txt");
 
-        Files.writeString(file, """
-                2
-                0 150 250
-                1 400 500
-                0 1 7
-                """);
+        File file =
+                createFile(
+                        """
+                        3
+                        0 1 5
+                        1 2 7
+                        """
+                );
 
-        Graph graph = new GraphFileReader().read(file.toString());
 
-        Node node = graph.getNodeById(0);
+        GraphFileReader reader =
+                new GraphFileReader();
 
-        assertEquals(150, node.getX());
-        assertEquals(250, node.getY());
-    }
 
-    // Проверка чтения веса ребра
-    @Test
-    void shouldReadEdgeWeight() throws IOException {
+        Graph graph =
+                reader.read(
+                        file.getAbsolutePath()
+                );
 
-        Path file = Files.createTempFile("graph", ".txt");
 
-        Files.writeString(file, """
-                2
-                0 100 100
-                1 200 200
-                0 1 25
-                """);
+        assertEquals(
+                3,
+                graph.getNodeCount()
+        );
 
-        Graph graph = new GraphFileReader().read(file.toString());
 
-        Edge edge = graph.getEdges().get(0);
-
-        assertEquals(25, edge.getWeight());
-    }
-
-    // Проверка обработки пустого файла
-    @Test
-    void shouldThrowExceptionForEmptyFile() throws IOException {
-
-        Path file = Files.createTempFile("graph", ".txt");
-
-        Files.writeString(file, "");
-
-        GraphFileReader reader = new GraphFileReader();
-
-        assertThrows(
-                IOException.class,
-                () -> reader.read(file.toString())
+        assertEquals(
+                2,
+                graph.getEdgeCount()
         );
     }
 
-    // Проверка обработки ребра с несуществующей вершиной
+
+
     @Test
-    void shouldThrowExceptionForUnknownNode() throws IOException {
+    void readGraphWithCoordinatesShouldPreserveCoordinates()
+            throws Exception {
 
-        Path file = Files.createTempFile("graph", ".txt");
 
-        Files.writeString(file, """
-                2
-                0 100 100
-                1 200 200
-                0 5 10
-                """);
+        File file =
+                createFile(
+                        """
+                        COORDS
+                        2
+                        10 100 200
+                        20 300 400
+                        10 20 5
+                        """
+                );
 
-        GraphFileReader reader = new GraphFileReader();
 
-        assertThrows(
-                IOException.class,
-                () -> reader.read(file.toString())
+        Graph graph =
+                new GraphFileReader()
+                        .read(file.getAbsolutePath());
+
+
+        assertEquals(
+                2,
+                graph.getNodeCount()
+        );
+
+
+        assertEquals(
+                100,
+                graph.getNodes()
+                        .get(0)
+                        .getX()
+        );
+
+
+        assertEquals(
+                200,
+                graph.getNodes()
+                        .get(0)
+                        .getY()
+        );
+
+
+        assertEquals(
+                1,
+                graph.getEdgeCount()
         );
     }
 
-    // Проверка обработки некорректного формата строки
+
+
     @Test
-    void shouldThrowExceptionForInvalidFormat() throws IOException {
+    void emptyFileShouldThrowException()
+            throws Exception {
 
-        Path file = Files.createTempFile("graph", ".txt");
 
-        Files.writeString(file, """
-                2
-                0 100
-                1 200 300
-                """);
+        File file =
+                createFile(
+                        ""
+                );
 
-        GraphFileReader reader = new GraphFileReader();
 
         assertThrows(
                 IOException.class,
-                () -> reader.read(file.toString())
+                () ->
+                        new GraphFileReader()
+                                .read(
+                                        file.getAbsolutePath()
+                                )
+        );
+    }
+
+
+
+    @Test
+    void negativeVertexCountShouldThrowException()
+            throws Exception {
+
+
+        File file =
+                createFile(
+                        "-5"
+                );
+
+
+        IOException exception =
+                assertThrows(
+                        IOException.class,
+                        () ->
+                                new GraphFileReader()
+                                        .read(
+                                                file.getAbsolutePath()
+                                        )
+                );
+
+
+        assertEquals(
+                "Количество вершин не может быть отрицательным.",
+                exception.getMessage()
+        );
+    }
+
+
+
+    @Test
+    void duplicateNodeIdShouldThrowException()
+            throws Exception {
+
+
+        File file =
+                createFile(
+                        """
+                        COORDS
+                        2
+                        1 100 100
+                        1 200 200
+                        """
+                );
+
+
+        assertThrows(
+                IOException.class,
+                () ->
+                        new GraphFileReader()
+                                .read(
+                                        file.getAbsolutePath()
+                                )
+        );
+    }
+
+
+
+    @Test
+    void invalidVertexFormatShouldThrowException()
+            throws Exception {
+
+
+        File file =
+                createFile(
+                        """
+                        COORDS
+                        1
+                        1 100
+                        """
+                );
+
+
+        assertThrows(
+                IOException.class,
+                () ->
+                        new GraphFileReader()
+                                .read(
+                                        file.getAbsolutePath()
+                                )
+        );
+    }
+
+
+
+    @Test
+    void invalidEdgeFormatShouldThrowException()
+            throws Exception {
+
+
+        File file =
+                createFile(
+                        """
+                        2
+                        0 1
+                        """
+                );
+
+
+        assertThrows(
+                IOException.class,
+                () ->
+                        new GraphFileReader()
+                                .read(
+                                        file.getAbsolutePath()
+                                )
+        );
+    }
+
+
+
+    @Test
+    void negativeEdgeWeightShouldThrowException()
+            throws Exception {
+
+
+        File file =
+                createFile(
+                        """
+                        2
+                        0 1 -10
+                        """
+                );
+
+
+        IOException exception =
+                assertThrows(
+                        IOException.class,
+                        () ->
+                                new GraphFileReader()
+                                        .read(
+                                                file.getAbsolutePath()
+                                        )
+                );
+
+
+        assertEquals(
+                "Вес ребра должен быть положительным.",
+                exception.getMessage()
+        );
+    }
+
+
+
+    @Test
+    void edgeWithUnknownNodeShouldThrowException()
+            throws Exception {
+
+
+        File file =
+                createFile(
+                        """
+                        2
+                        0 5 10
+                        """
+                );
+
+
+        IOException exception =
+                assertThrows(
+                        IOException.class,
+                        () ->
+                                new GraphFileReader()
+                                        .read(
+                                                file.getAbsolutePath()
+                                        )
+                );
+
+
+        assertTrue(
+                exception.getMessage()
+                        .contains(
+                                "несуществующую вершину"
+                        )
+        );
+    }
+
+
+
+    @Test
+    void bomAtStartShouldBeIgnored()
+            throws Exception {
+
+
+        File file =
+                createFile(
+                        "\uFEFF2\n0 1 5"
+                );
+
+
+        Graph graph =
+                new GraphFileReader()
+                        .read(
+                                file.getAbsolutePath()
+                        );
+
+
+        assertEquals(
+                2,
+                graph.getNodeCount()
+        );
+
+
+        assertEquals(
+                1,
+                graph.getEdgeCount()
         );
     }
 }

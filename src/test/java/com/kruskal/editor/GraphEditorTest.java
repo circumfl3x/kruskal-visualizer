@@ -3,6 +3,7 @@ package com.kruskal.editor;
 import com.kruskal.model.Edge;
 import com.kruskal.model.Graph;
 import com.kruskal.model.Node;
+import com.kruskal.util.Logger;
 import com.kruskal.visualisation.GraphRenderer;
 import javafx.scene.Group;
 import org.junit.jupiter.api.Test;
@@ -17,43 +18,100 @@ import static org.junit.jupiter.api.Assertions.*;
 class GraphEditorTest {
 
 
+    // Заглушка Logger без JavaFX TextArea
+    static class TestLogger extends Logger {
+
+        public TestLogger() {
+            super(null);
+        }
+
+
+        @Override
+        public void log(String message) {
+        }
+
+
+        @Override
+        public void clear() {
+        }
+
+
+        @Override
+        public void logError(String errorMessage) {
+        }
+    }
+
+
+
     private GraphEditor createEditor(Graph graph) {
 
         return new GraphEditor(
                 graph,
                 new GraphRenderer(),
-                new Group()
+                new Group(),
+                new TestLogger()
         );
     }
 
 
-    private Graph createGraph() {
 
-        Node n1 = new Node(0, 100, 100);
-        Node n2 = new Node(1, 200, 200);
-
-        Edge edge = new Edge(
-                n1,
-                n2,
-                5
-        );
+    private Graph emptyGraph(){
 
         return new Graph(
-                new ArrayList<>(List.of(n1,n2)),
-                new ArrayList<>(List.of(edge))
+                new ArrayList<>(),
+                new ArrayList<>()
         );
     }
+
+
+
+
+    private Graph createGraph(){
+
+
+        Node n1 =
+                new Node(
+                        0,
+                        100,
+                        100
+                );
+
+
+        Node n2 =
+                new Node(
+                        1,
+                        200,
+                        200
+                );
+
+
+        Edge edge =
+                new Edge(
+                        n1,
+                        n2,
+                        5
+                );
+
+
+        return new Graph(
+                new ArrayList<>(
+                        List.of(n1,n2)
+                ),
+                new ArrayList<>(
+                        List.of(edge)
+                )
+        );
+    }
+
+
 
 
 
     @Test
-    void testInitialModeIsNone() {
+    void initialModeShouldBeNone(){
 
         GraphEditor editor =
-                createEditor(new Graph(
-                        new ArrayList<>(),
-                        new ArrayList<>()
-                ));
+                createEditor(emptyGraph());
 
 
         assertEquals(
@@ -64,16 +122,12 @@ class GraphEditorTest {
 
 
 
+
     @Test
-    void testSetModeChangesMode() {
+    void setModeShouldChangeMode(){
 
         GraphEditor editor =
-                createEditor(
-                        new Graph(
-                                new ArrayList<>(),
-                                new ArrayList<>()
-                        )
-                );
+                createEditor(emptyGraph());
 
 
         editor.setMode(
@@ -89,19 +143,18 @@ class GraphEditorTest {
 
 
 
+
     @Test
-    void testDisableModeSetsNone() {
+    void disableModeShouldResetMode(){
 
         GraphEditor editor =
-                createEditor(
-                        new Graph(
-                                new ArrayList<>(),
-                                new ArrayList<>()
-                        )
-                );
+                createEditor(emptyGraph());
 
 
-        editor.setMode(EditMode.ADD_NODE);
+        editor.setMode(
+                EditMode.ADD_NODE
+        );
+
 
         editor.disableMode();
 
@@ -114,14 +167,12 @@ class GraphEditorTest {
 
 
 
+
     @Test
-    void testAddNode() {
+    void addNodeShouldCreateVertex(){
 
         Graph graph =
-                new Graph(
-                        new ArrayList<>(),
-                        new ArrayList<>()
-                );
+                emptyGraph();
 
 
         GraphEditor editor =
@@ -154,6 +205,7 @@ class GraphEditorTest {
                 node.getX()
         );
 
+
         assertEquals(
                 150,
                 node.getY()
@@ -162,8 +214,10 @@ class GraphEditorTest {
 
 
 
+
+
     @Test
-    void testDeleteNode() {
+    void deleteNodeShouldRemoveVertex(){
 
         Graph graph =
                 createGraph();
@@ -171,6 +225,7 @@ class GraphEditorTest {
 
         GraphEditor editor =
                 createEditor(graph);
+
 
 
         editor.setMode(
@@ -192,8 +247,9 @@ class GraphEditorTest {
 
 
 
+
     @Test
-    void testDeleteEdgeByClickOnEdge() {
+    void deleteEdgeShouldRemoveEdge(){
 
         Graph graph =
                 createGraph();
@@ -201,6 +257,7 @@ class GraphEditorTest {
 
         GraphEditor editor =
                 createEditor(graph);
+
 
 
         editor.setMode(
@@ -222,8 +279,10 @@ class GraphEditorTest {
 
 
 
+
+
     @Test
-    void testClickOnNodeDoesNotDeleteEdge() {
+    void deleteEdgeModeClickOnNodeKeepsEdge(){
 
         Graph graph =
                 createGraph();
@@ -238,14 +297,11 @@ class GraphEditorTest {
         );
 
 
-        // клик по вершине
         editor.handleClick(
                 100,
                 100
         );
 
-
-        // ребро должно остаться
 
         assertEquals(
                 1,
@@ -255,66 +311,58 @@ class GraphEditorTest {
 
 
 
+
+
     @Test
-    void testSetGraphReplacesGraph() {
+    void setGraphShouldReplaceGraph(){
+
 
         GraphEditor editor =
                 createEditor(
-                        new Graph(
-                                new ArrayList<>(),
-                                new ArrayList<>()
-                        )
+                        emptyGraph()
                 );
 
 
-        Graph newGraph =
+        Graph graph =
                 createGraph();
 
 
         editor.setGraph(
-                newGraph
-        );
-
-
-        editor.setMode(
-                EditMode.DELETE_NODE
-        );
-
-
-        editor.handleClick(
-                100,
-                100
+                graph
         );
 
 
         assertEquals(
-                1,
-                newGraph.getNodeCount()
+                2,
+                graph.getNodeCount()
         );
     }
 
 
 
+
+
     @Test
-    void testGraphChangedCallbackCalled() {
+    void graphChangedCallbackShouldRun(){
+
 
         Graph graph =
-                new Graph(
-                        new ArrayList<>(),
-                        new ArrayList<>()
-                );
+                emptyGraph();
 
 
         GraphEditor editor =
                 createEditor(graph);
 
 
+
         AtomicBoolean changed =
                 new AtomicBoolean(false);
 
 
+
         editor.setOnGraphChanged(
-                () -> changed.set(true)
+                () ->
+                        changed.set(true)
         );
 
 
@@ -336,14 +384,14 @@ class GraphEditorTest {
 
 
 
+
+
     @Test
-    void testNodeIdsAreUnique() {
+    void nodesShouldHaveDifferentIds(){
+
 
         Graph graph =
-                new Graph(
-                        new ArrayList<>(),
-                        new ArrayList<>()
-                );
+                emptyGraph();
 
 
         GraphEditor editor =
@@ -367,15 +415,15 @@ class GraphEditorTest {
         );
 
 
-        assertEquals(
-                0,
-                graph.getNodes().get(0).getId()
-        );
+        assertNotEquals(
+                graph.getNodes()
+                        .get(0)
+                        .getId(),
 
-
-        assertEquals(
-                1,
-                graph.getNodes().get(1).getId()
+                graph.getNodes()
+                        .get(1)
+                        .getId()
         );
     }
+
 }

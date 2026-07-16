@@ -32,7 +32,7 @@ public class GraphRendererTest {
     void setUp() {
         renderer = new GraphRenderer();
 
-        graph = new Graph();
+        graph = new Graph(new ArrayList<>(), new ArrayList<>());
 
         Node node1 = new Node(0, 100, 100);
         Node node2 = new Node(1, 200, 100);
@@ -59,7 +59,7 @@ public class GraphRendererTest {
     @Test
     void renderGraph_emptyGraph_shouldNotDrawAnything() {
 
-        Graph empty = new Graph();
+        Graph empty = new Graph(new ArrayList<>(), new ArrayList<>());
 
         renderer.renderGraph(empty, group);
 

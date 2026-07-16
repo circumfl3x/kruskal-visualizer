@@ -28,11 +28,11 @@ public class GraphFileReader {
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
             // Читаем первую строку (количество вершин)
             String firstLine = reader.readLine();
-            firstLine = firstLine.trim().replace("\uFEFF", "");
-
             if (firstLine == null || firstLine.isBlank()) {
                 throw new IOException("Файл пуст.");
             }
+            firstLine = firstLine.trim()
+                    .replace("\uFEFF", "");
 
             /* Определяем, с каким файлом работаем:
              *  1. Если первая строка "COORDS", тогда идентифицируем файл,
