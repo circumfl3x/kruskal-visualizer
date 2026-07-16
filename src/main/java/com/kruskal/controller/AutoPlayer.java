@@ -32,6 +32,7 @@ public class AutoPlayer {
     private boolean isPaused;
     private Runnable onFinish;
     private Runnable onPauseCallback;
+    private Runnable onComplete; // новый callback для завершения
 
     public AutoPlayer(GraphRenderer renderer, Logger logger,
                       Button autoButton, TextField speedField,
@@ -118,12 +119,10 @@ public class AutoPlayer {
 
     private void resume() {
         if (isPaused) {
-            // Останавливаем старый timeline (если есть)
             if (timeline != null) {
                 timeline.stop();
                 timeline = null;
             }
-            // Создаём новый с актуальной скоростью
             createAndPlayTimeline();
             isPaused = false;
             isPlaying = true;
@@ -159,6 +158,12 @@ public class AutoPlayer {
         isPlaying = false;
         isPaused = false;
         resetButton();
+
+        // Вызываем callback завершения, если он установлен
+        if (onComplete != null) {
+            onComplete.run();
+            onComplete = null;
+        }
     }
 
     public void reset() {
@@ -212,5 +217,9 @@ public class AutoPlayer {
 
     public int getCurrentIndex() {
         return currentIndexRef;
+    }
+
+    public void setOnComplete(Runnable onComplete) {
+        this.onComplete = onComplete;
     }
 }

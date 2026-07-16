@@ -102,6 +102,9 @@ public class MainController {
                     }
                 }
         );
+        autoPlayer.setOnComplete(() -> {
+            unlockControls();
+        });
         autoPlayer.setGraph(currentGraph);
 
         graphPane.setOnMouseClicked(event -> {
