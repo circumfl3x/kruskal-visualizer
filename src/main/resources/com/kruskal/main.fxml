@@ -18,7 +18,6 @@
       fx:controller="com.kruskal.controller.MainController">
 
 
-    <!-- Верхняя панель управления -->
     <VBox spacing="5">
         <HBox alignment="CENTER_LEFT" spacing="10">
             <Button fx:id="addNodeButton"
@@ -48,7 +47,6 @@
     </VBox>
     
 
-    <!-- Управление алгоритмом -->
     <HBox alignment="CENTER_LEFT" spacing="10">
         <Button onAction="#onGenerateGraph"
                 text="Generate Graph"/>
@@ -72,10 +70,8 @@
     </HBox>
 
 
-    <!-- Основная область -->
     <HBox spacing="10"
           VBox.vgrow="ALWAYS">
-        <!-- Original Graph -->
         <VBox spacing="5"
               HBox.hgrow="ALWAYS">
             <Label text="Original Graph"
@@ -90,7 +86,6 @@
                 <Pane fx:id="graphPane"
                       prefWidth="500"
                       prefHeight="500"
-                      mouseTransparent="false"
                       HBox.hgrow="ALWAYS"
                       VBox.vgrow="ALWAYS">
                     <Group fx:id="graphGroup"/>
@@ -99,7 +94,6 @@
         </VBox>
 
 
-        <!-- MST -->
         <VBox spacing="5"
               HBox.hgrow="ALWAYS">
             <Label text="MST"
@@ -122,7 +116,6 @@
         </VBox>
 
 
-        <!-- Steps -->
         <VBox spacing="5"
               HBox.hgrow="ALWAYS">
             <Label text="Steps"
@@ -143,7 +136,6 @@
     </HBox>
 
 
-    <!-- Нижняя панель -->
     <HBox alignment="CENTER_LEFT">
         <Button onAction="#onInfo"
                 text="Info"/>
