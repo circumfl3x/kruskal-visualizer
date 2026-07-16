@@ -19,8 +19,14 @@ import javafx.stage.FileChooser;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 
+/**
+ * Главный контроллер приложения, связывающий FXML-разметку с логикой.
+ *
+ * Инициализирует все компоненты (менеджеры, координатор, обработчики),
+ * обрабатывает действия кнопок и делегирует их соответствующим классам.
+ *
+ */
 public class MainController {
 
     @FXML private StackPane graphContainer;
@@ -34,18 +40,15 @@ public class MainController {
 
     private GraphManager graphManager;
     private Logger logger;
-    private GraphRenderer renderer;
-    private KruskalAlgorithm algorithm;
     private AutoPlayer autoPlayer;
     private UIStateManager uiStateManager;
     private PlaybackCoordinator playbackCoordinator;
-    private GraphInteractionHandler interactionHandler;
 
     @FXML
     public void initialize() {
         logger = new Logger(stepsTextArea);
-        renderer = new GraphRenderer();
-        algorithm = new KruskalAlgorithm();
+        GraphRenderer renderer = new GraphRenderer();
+        KruskalAlgorithm algorithm = new KruskalAlgorithm();
 
         uiStateManager = new UIStateManager(addNodeButton, addEdgeButton, editWeightButton,
                 deleteNodeButton, deleteEdgeButton, runKruskalManualButton);
@@ -77,14 +80,13 @@ public class MainController {
         graphManager.setAutoPlayer(autoPlayer);
         playbackCoordinator.setAutoPlayer(autoPlayer);
 
-        // Подписка на размеры
         graphPane.widthProperty().addListener((obs, old, val) ->
                 graphManager.setCanvasSize(val.doubleValue(), graphPane.getHeight()));
         graphPane.heightProperty().addListener((obs, old, val) ->
                 graphManager.setCanvasSize(graphPane.getWidth(), val.doubleValue()));
 
-        // Обработчики мыши (GraphInteractionHandler уже создан в отдельном классе)
-        interactionHandler = new GraphInteractionHandler(graphManager, graphPane);
+        // Обработчики мыши
+        GraphInteractionHandler interactionHandler = new GraphInteractionHandler(graphManager, graphPane);
 
         graphGroup.setMouseTransparent(true);
         mstGroup.setMouseTransparent(true);
@@ -94,8 +96,6 @@ public class MainController {
         mstGroup.getChildren().clear();
         logger.clear();
     }
-
-    // ---- Действия кнопок ----
 
     @FXML private void onAddNode() {
         switchEditMode(EditMode.ADD_NODE);
@@ -192,7 +192,6 @@ public class MainController {
     @FXML private void onRunKruskalAuto() {
         uiStateManager.lockControls();
         playbackCoordinator.runAuto();
-        // разблокировка будет через onComplete в autoPlayer
     }
 
     @FXML private void onRunKruskalManual() {

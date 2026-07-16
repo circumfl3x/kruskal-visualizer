@@ -2,6 +2,14 @@ package com.kruskal.controller;
 
 import javafx.scene.control.Button;
 
+/**
+ * Управляет состоянием блокировки элементов интерфейса.
+ *
+ * Отвечает за блокировку и разблокировку кнопок редактирования
+ * и ручного управления во время выполнения автоматического
+ * воспроизведения, чтобы предотвратить конфликтующие действия.
+ *
+ */
 public class UIStateManager {
     private final Button addNodeButton, addEdgeButton, editWeightButton, deleteNodeButton, deleteEdgeButton, runKruskalManualButton;
 

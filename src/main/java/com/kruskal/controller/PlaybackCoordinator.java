@@ -10,6 +10,14 @@ import javafx.scene.Group;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Координирует пошаговое и автоматическое воспроизведение алгоритма.
+ *
+ * Хранит список шагов и текущий индекс, управляет ручным переключением
+ * (Prev/Next), запуском пошагового режима и синхронизацией с
+ * {@link AutoPlayer} при паузе/возобновлении.
+ *
+ */
 public class PlaybackCoordinator {
     private final KruskalAlgorithm algorithm;
     private final GraphRenderer renderer;
@@ -75,7 +83,7 @@ public class PlaybackCoordinator {
         } else {
             autoPlayer.setSteps(null, -1);
         }
-        autoPlayer.togglePlay(() -> syncFromAuto());
+        autoPlayer.togglePlay(this::syncFromAuto);
     }
 
     public void nextStep() {
@@ -136,7 +144,4 @@ public class PlaybackCoordinator {
     public void setAutoPlayer(AutoPlayer autoPlayer) {
         this.autoPlayer = autoPlayer;
     }
-
-    public List<VisualizationStep> getSteps() { return steps; }
-    public int getCurrentStepIndex() { return currentStepIndex; }
 }

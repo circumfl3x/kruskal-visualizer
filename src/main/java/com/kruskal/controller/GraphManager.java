@@ -5,7 +5,6 @@ import com.kruskal.editor.GraphEditor;
 import com.kruskal.io.GraphFileReader;
 import com.kruskal.io.GraphFileWriter;
 import com.kruskal.model.Graph;
-import com.kruskal.model.Node;
 import com.kruskal.util.GraphGenerator;
 import com.kruskal.util.Logger;
 import com.kruskal.visualisation.GraphRenderer;
@@ -17,6 +16,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * Центральный менеджер для управления графом и его состоянием.
+ *
+ * Объединяет операции с графом: генерация, загрузка из файла,
+ * сохранение, очистка, рендеринг, а также управление редактором
+ * и авто-плеером. Синхронизирует изменения с визуализацией.
+ *
+ */
 public class GraphManager {
     private Graph currentGraph;
     private final GraphRenderer renderer;
@@ -122,16 +129,8 @@ public class GraphManager {
         this.autoPlayer = autoPlayer;
     }
 
-    public void renderGraphWithHighlight(List<Node> highlighted) {
-        renderer.renderGraph(currentGraph, graphGroup, highlighted);
-    }
-
     public GraphEditor getEditor() {
         return editor;
-    }
-
-    public AutoPlayer getAutoPlayer() {
-        return autoPlayer;
     }
 
     public void handleEditorClick(double x, double y) {

@@ -3,10 +3,17 @@ package com.kruskal.controller;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 
+/**
+ * Обрабатывает события мыши на холсте графа.
+ *
+ * Отвечает за клики, перетаскивание вершин и определение порога
+ * для различения клика от драга. Все действия делегирует
+ * {@link GraphManager} и GraphEditor.
+ *
+ */
 public class GraphInteractionHandler {
     private final GraphManager graphManager;
     private final Pane graphPane;
-    private final double dragThreshold = 5.0;
     private boolean dragged = false;
     private double mousePressX, mousePressY;
     private boolean dragging;
@@ -34,8 +41,8 @@ public class GraphInteractionHandler {
         double radius = 20;
         double maxX = graphPane.getWidth() - radius;
         double maxY = graphPane.getHeight() - radius;
-        x = Math.max(radius, Math.min(x, maxX));
-        y = Math.max(radius, Math.min(y, maxY));
+        x = Math.clamp(x, radius, maxX);
+        y = Math.clamp(y, radius, maxY);
         graphManager.handleEditorClick(x, y);
     }
 
@@ -49,6 +56,7 @@ public class GraphInteractionHandler {
     private void onMouseDragged(MouseEvent event) {
         double dx = event.getX() - mousePressX;
         double dy = event.getY() - mousePressY;
+        double dragThreshold = 5.0;
         if (Math.sqrt(dx*dx + dy*dy) > dragThreshold) {
             dragging = true;
             graphManager.handleEditorMouseDragged(event.getX(), event.getY());
